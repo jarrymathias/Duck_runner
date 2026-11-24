@@ -105,12 +105,13 @@ const throwsStatus = (fn, status) => assert.throws(fn, (e) => e.status === statu
     assert.strictEqual(ev.type, 'answer');
     assert.strictEqual(ev.correct, true);
   });
-  await test('a wrong answer sends the pawn back', () => {
+  await test('a wrong answer moves the pawn back one square', () => {
     let r = rooms.startGame(rooms.joinRoom(rooms.createRoom('K7P2XM', alice), bob), alice);
     r = rooms.roll(r, alice, 2);
     const q = L.QUESTIONS[r.game.pending.questionId];
     r = rooms.answer(r, alice, (q.a + 1) % 4);
-    assert.strictEqual(r.game.players[0].pos, 0);
+    assert.strictEqual(r.game.players[0].pos, 1);
+    assert.strictEqual(r.events[r.events.length - 1].to, 1);
   });
   await test('special squares pass the turn without a question', () => {
     let r = rooms.startGame(rooms.joinRoom(rooms.createRoom('K7P2XM', alice), bob), alice);
@@ -281,6 +282,13 @@ const throwsStatus = (fn, status) => assert.throws(fn, (e) => e.status === statu
   });
 
   console.log('HTTP server + SQL (in-memory PostgreSQL)');
+  // The server rolls a real die; a 5 lands on a Rest square (no question),
+  // so the HTTP tests replace a first-turn 5 by a 4 to always get a question.
+  const realRoll = rooms.roll;
+  rooms.roll = (room, user, value, opts) => {
+    const v = value !== undefined ? value : 1 + Math.floor(Math.random() * 6);
+    return realRoll(room, user, v === 5 ? 4 : v, opts);
+  };
   let server;
   try {
     const { newDb } = require('pg-mem');
@@ -377,7 +385,7 @@ const throwsStatus = (fn, status) => assert.throws(fn, (e) => e.status === statu
       assert.deepStrictEqual(r.body.room.events.map((e) => e.type), ['roll']);
       r = await B('GET', `/api/rooms/${code}?since=${r.body.room.seq}&chat=${r.body.room.chatSeq}`);
       assert.strictEqual(r.body.unchanged, true);
-      // Squares 1 to 6 are all question squares: Alice must answer, before the deadline.
+      // Squares 1 to 6 except 5 (rest) are question squares: Alice must answer, before the deadline.
       let g = (await A('GET', `/api/rooms/${code}?since=-1`)).body.room.game;
       assert.strictEqual(g.phase, 'question');
       assert.ok(g.pending.deadline > Date.now() + 25000);

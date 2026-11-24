@@ -45,7 +45,7 @@ Every push to `main` deploys again. On the free plan the server sleeps after 15 
 3. The others click **Join a game** and type the code. A game holds up to 6 players.
 4. The host (whoever created the game) clicks **Start the game**.
 5. On your turn, click **Roll the die**. Your pawn moves square by square, and every player sees it move.
-   - **Question square:** answer the question shown in the pop-up within **30 seconds**. If you're right you stay on the square; if you're wrong, or time runs out, you go back to where your turn started. The other players see the question, the countdown and your answer, and can react while they wait.
+   - **Question square:** answer the question shown in the pop-up within **30 seconds**. If you're right you stay on the square; if you're wrong, or time runs out, you move back one square (the special effect of that square does not apply). The other players see the question, the countdown and your answer, and can react while they wait.
    - **Special square:** its effect applies automatically. The table below lists them.
    - You must land exactly on **FINISH**. If your roll is too high, the pawn bounces back by the extra squares.
 6. The first player on FINISH wins. Players are ranked by their square, then by how many questions they answered correctly. The host can start a new game with the same players.

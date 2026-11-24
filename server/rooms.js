@@ -209,10 +209,11 @@ function settleQuestion(room, choice, timedOut) {
   const { questionId, start, landing } = room.game.pending;
   const correct = !timedOut && choice === L.QUESTIONS[questionId].a;
   room.game = L.answerQuestion(room.game, correct);
+  const to = room.game.players[seat].pos; // landing if right, one square back if wrong
   const skipped = passTurn(room);
   push(room, {
     type: 'answer', player: seat, userId: room.seats[seat].userId, questionId,
-    choice: timedOut ? null : choice, correct, timedOut, start, landing, skipped, state: publicGame(room.game)
+    choice: timedOut ? null : choice, correct, timedOut, start, landing, to, skipped, state: publicGame(room.game)
   });
 }
 

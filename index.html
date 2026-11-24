@@ -58,7 +58,7 @@
         <ul>
           <li>Players take turns in order. Roll the die and move your pawn forward.</li>
           <li>On a <strong>question square</strong>, answer the multiple-choice question within <strong>30 seconds</strong>.
-            <strong>Right:</strong> stay there. <strong>Wrong or too slow:</strong> go back to where you started your turn.
+            <strong>Right:</strong> stay there. <strong>Wrong or too slow:</strong> move back one square (its special effect does not apply).
             You get more questions on the themes you find hard.</li>
           <li class="rule-special"><img class="rule-icon" src="icons/bonus.svg" alt=""> <span><strong>Shortcut</strong> (8 → 13, 21 → 25): jump ahead.</span></li>
           <li class="rule-special"><img class="rule-icon" src="icons/bridge.svg" alt=""> <span><strong>Bridge</strong> (24): cross straight to square 28.</span></li>
@@ -102,7 +102,7 @@
         <ul>
           <li>Players take turns in order. Roll the die and move your pawn forward.</li>
           <li>On a <strong>question square</strong>, answer the multiple-choice question within <strong>30 seconds</strong>.
-            <strong>Right:</strong> stay there. <strong>Wrong or too slow:</strong> go back to where you started your turn.
+            <strong>Right:</strong> stay there. <strong>Wrong or too slow:</strong> move back one square (its special effect does not apply).
             You get more questions on the themes you find hard.</li>
           <li class="rule-special"><img class="rule-icon" src="icons/bonus.svg" alt=""> <span><strong>Shortcut</strong> (8 → 13, 21 → 25): jump ahead.</span></li>
           <li class="rule-special"><img class="rule-icon" src="icons/bridge.svg" alt=""> <span><strong>Bridge</strong> (24): cross straight to square 28.</span></li>
@@ -142,7 +142,7 @@
         <ul>
           <li>Players take turns in order. Roll the die and move your pawn forward.</li>
           <li>On a <strong>question square</strong>, answer the multiple-choice question within <strong>30 seconds</strong>.
-            <strong>Right:</strong> stay there. <strong>Wrong or too slow:</strong> go back to where you started your turn.
+            <strong>Right:</strong> stay there. <strong>Wrong or too slow:</strong> move back one square (its special effect does not apply).
             You get more questions on the themes you find hard.</li>
           <li class="rule-special"><img class="rule-icon" src="icons/bonus.svg" alt=""> <span><strong>Shortcut</strong> (8 → 13, 21 → 25): jump ahead.</span></li>
           <li class="rule-special"><img class="rule-icon" src="icons/bridge.svg" alt=""> <span><strong>Bridge</strong> (24): cross straight to square 28.</span></li>
@@ -573,9 +573,15 @@
     };
   }
 
+  /** Wrong answer: how many squares the pawn moves back. */
+  const WRONG_ANSWER_STEP_BACK = 1;
+
+  /** Square a pawn ends on after a wrong answer on `landing`. */
+  const stepBackFrom = (landing) => Math.max(START, landing - WRONG_ANSWER_STEP_BACK);
+
   /**
-   * Right answer: stay on the square. Wrong answer: back to the square where
-   * the turn started. Going back never re-triggers a special square.
+   * Right answer: stay on the square. Wrong answer: move back one square.
+   * The square you step back to never triggers its special effect.
    */
   function answerQuestion(state, isCorrect) {
     if (state.phase !== 'question' || !state.pending) throw new Error('No question pending.');
@@ -586,7 +592,7 @@
       player.correct += 1;
       player.pos = s.pending.landing;
     } else {
-      player.pos = s.pending.start;
+      player.pos = stepBackFrom(s.pending.landing);
     }
     s.pending = null;
     s.phase = 'turnEnd';
@@ -628,7 +634,7 @@
     QUESTIONS, THEMES, SPECIAL_CELLS, START, FINISH, MAX_CHAIN,
     shuffle, isSpecial, computeMove, resolveLanding,
     createDeck, drawCard,
-    createGame, playRoll, answerQuestion, advanceTurn, ranking
+    createGame, playRoll, answerQuestion, advanceTurn, ranking, stepBackFrom, WRONG_ANSWER_STEP_BACK
   };
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.GooseLogic = api;
@@ -1663,6 +1669,9 @@
     ui.question.shown = true;
     stopQuestionTimer();
     const late = !!ev.timedOut;
+    // Wrong answer: one square back (older servers sent only `start`)
+    const backTo = ev.to !== undefined ? ev.to : L.stepBackFrom(ev.landing);
+    const backText = `${squareName(backTo)}`;
 
     // Mark options (with text, not only color)
     [...$('q-options').children].forEach((btn) => {
@@ -1692,7 +1701,7 @@
           : ev.correct ? (mine ? '🎉 Correct!' : `🎉 ${name} got it right!`)
           : (mine ? '❌ Not quite!' : `❌ ${name} got it wrong.`)
       }),
-      el('p', { text: ev.correct ? `${who} stay${mine ? '' : 's'} on square ${ev.landing}.` : `${who} go${mine ? '' : 'es'} back to ${squareName(ev.start)}.` }),
+      el('p', { text: ev.correct ? `${who} stay${mine ? '' : 's'} on square ${ev.landing}.` : `${who} move${mine ? '' : 's'} back one square, to ${backText}.` }),
       el('p', {}, [el('strong', { text: `Answer: ${letter}. ${q.o[q.a]}` })]),
       el('p', { text: q.e })
     );
@@ -1701,8 +1710,8 @@
     $('q-continue').hidden = false;
     $('q-continue').focus();
     log(ev.correct ? `${name} answered correctly and stays on square ${ev.landing}.`
-      : late ? `${name} ran out of time and goes back to ${squareName(ev.start)}.`
-      : `${name} answered wrong and goes back to ${squareName(ev.start)}.`, i);
+      : late ? `${name} ran out of time and moves back to ${backText}.`
+      : `${name} answered wrong and moves back to ${backText}.`, i);
     renderPlayers(ev.state);
 
     // Wait for "Continue" (others' answers also close by themselves after a while)
@@ -1715,7 +1724,7 @@
     ui.question = null;
     closeModal($('question-modal'));
 
-    if (!ev.correct) await jumpPawn(i, ev.start, token);
+    if (!ev.correct && backTo !== ev.landing) await walkPawn(i, [backTo], token);
     await announceSkips(ev.skipped, ev.state, token);
     finishTurn(ev.state);
   }

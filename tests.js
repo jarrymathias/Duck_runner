@@ -198,25 +198,40 @@ test('right answer: stay on the square, +1 correct', () => {
   eq(s.phase, 'turnEnd');
 });
 
-test('wrong answer: back to the start square, special effect not re-triggered', () => {
-  // Start of turn on 26 (typhoon) after the skips are over
-  let g = gameAt(26);
-  let r = L.playRoll(g, 4);                   // → 30, question
+test('wrong answer: one square back, wherever the turn started', () => {
+  let r = L.playRoll(gameAt(16), 2);          // 16 → 18, question
+  let s = L.answerQuestion(r.state, false);
+  eq(s.players[0].pos, 17);
+  eq(s.players[0].correct, 0);
+  eq(s.players[0].answered, 1);
+
+  r = L.playRoll(gameAt(11), 6);              // 11 → 17, question
+  s = L.answerQuestion(r.state, false);
+  eq(s.players[0].pos, 16, 'a 6 roll costs only one square, not six');
+});
+
+test('wrong answer: the square stepped back to does not trigger its effect', () => {
+  // 30 → back to 29 (boat to 5): stays on 29
+  let r = L.playRoll(gameAt(28), 2);
   eq(r.state.phase, 'question');
   let s = L.answerQuestion(r.state, false);
-  eq(s.players[0].pos, 26);
-  eq(s.players[0].skip, 0, 'typhoon not re-triggered');
-  eq(s.players[0].correct, 0);
-
-  // Start of turn on 16 (rest)
-  r = L.playRoll(gameAt(16), 2);              // → 18, question
+  eq(s.players[0].pos, 29);
+  // 9 → back to 8 (shortcut to 13): stays on 8
+  r = L.playRoll(gameAt(7), 2);
   s = L.answerQuestion(r.state, false);
-  eq(s.players[0].pos, 16);
-
-  // Start of turn on LEAVE
-  r = L.playRoll(gameAt(0), 1);
+  eq(s.players[0].pos, 8);
+  // 27 is rest, 26 the whirlpool: 28 → back to 27, no skip
+  r = L.playRoll(gameAt(25), 3);
   s = L.answerQuestion(r.state, false);
+  eq(s.players[0].pos, 27);
+  eq(s.players[0].skip, 0);
+});
+
+test('wrong answer on square 1: back to START, never below', () => {
+  const r = L.playRoll(gameAt(0), 1);
+  const s = L.answerQuestion(r.state, false);
   eq(s.players[0].pos, 0);
+  eq(L.stepBackFrom(0), 0);
 });
 
 test('cannot roll while a question is pending', () => {
