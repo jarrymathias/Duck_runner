@@ -101,13 +101,13 @@ h2 { font-size: 1.25rem; }
 .btn--small { font-size: .9rem; padding: .45em 1em; min-height: 40px; }
 .app-header .btn--ghost { box-shadow: none; }
 .brand { margin: 0; display: grid; justify-items: center; line-height: 1; }
-.brand .logo { display: block; width: auto; height: clamp(96px, 20vw, 170px); }
+.brand .logo { display: block; width: auto; height: clamp(64px, 11vw, 110px); }
 .brand .subtitle {
   font: 600 clamp(.8rem, 1.6vw, 1rem) var(--font-display);
   color: var(--ink-soft); letter-spacing: .08em; text-transform: uppercase; margin-top: -.2rem;
 }
 /* Smaller logo during a game, so the board stays in view */
-body:has(#game-screen:not([hidden])) .brand .logo { height: clamp(64px, 10vw, 96px); }
+body:has(#game-screen:not([hidden])) .brand .logo { height: clamp(44px, 6vw, 64px); }
 
 main { max-width: 1280px; margin: 0 auto; padding: 1rem; }
 
@@ -213,7 +213,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 1rem; }
 #board {
   position: relative;
   /* Square picture: as wide as the card, but never taller than the screen */
-  width: min(100%, calc(100vh - 170px));
+  width: min(100%, calc(100vh - 140px));
   min-width: min(100%, 320px);
   aspect-ratio: 1;
   margin: 0 auto;
