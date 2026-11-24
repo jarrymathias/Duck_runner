@@ -134,6 +134,7 @@
           <button type="button" class="btn btn--big" id="room-start-btn">Start the game</button>
         </div>
       </div>
+      <div id="room-chat-slot"></div>
       <section class="card rules" aria-labelledby="rules-title-3">
         <h2 id="rules-title-3">How to play</h2>
         <ul>
@@ -184,6 +185,20 @@
         <ul class="player-list" id="player-list"></ul>
       </section>
 
+      <div class="area-chat" id="game-chat-slot">
+        <!-- The chat card lives here during a game and moves to the waiting room before it. -->
+        <section class="card chat-card" id="chat-card" aria-labelledby="chat-title">
+          <h2 id="chat-title">Chat</h2>
+          <ol class="chat-log" id="chat-log" aria-live="polite" aria-label="Messages"></ol>
+          <div class="reactions" id="chat-reactions" role="group" aria-label="Send a reaction"></div>
+          <form class="chat-form" id="chat-form" novalidate>
+            <label for="chat-input" class="visually-hidden">Message</label>
+            <input type="text" id="chat-input" maxlength="200" autocomplete="off" placeholder="Say something nice…">
+            <button type="submit" class="btn btn--small" id="chat-send">Send</button>
+          </form>
+        </section>
+      </div>
+
       <section class="card area-history" aria-labelledby="history-title">
         <h2 id="history-title">History</h2>
         <ol class="history" id="history"></ol>
@@ -202,11 +217,16 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="q-text" aria-describedby="q-who">
     <div class="modal-head" id="q-head"><span id="q-theme"></span><span id="q-square"></span></div>
     <div class="modal-body">
+      <div class="q-timer" id="q-timer" hidden>
+        <div class="q-timer-track" aria-hidden="true"><div class="q-timer-bar" id="q-timer-bar"></div></div>
+        <span class="q-timer-text" id="q-timer-text" role="timer" aria-live="off"></span>
+      </div>
       <p class="q-who" id="q-who"></p>
       <p class="q-text" id="q-text"></p>
       <div class="options" id="q-options"></div>
       <p class="key-hint" id="q-hint">Tip: press A, B, C or D to answer.</p>
       <div class="feedback" id="q-feedback" role="status" hidden></div>
+      <div class="reactions reactions--modal" id="q-reactions" role="group" aria-label="React" hidden></div>
       <div class="modal-actions">
         <button type="button" class="btn" id="q-continue" hidden>Continue</button>
       </div>
@@ -226,6 +246,10 @@
         <thead><tr><th class="num" scope="col">Rank</th><th scope="col">Player</th><th scope="col">Square</th><th class="num" scope="col">Correct answers</th></tr></thead>
         <tbody id="rank-body"></tbody>
       </table>
+      <section class="report" id="report" aria-labelledby="report-title" hidden>
+        <h3 id="report-title">Your report</h3>
+        <div id="report-body"><p class="muted">Loading your report…</p></div>
+      </section>
       <p class="key-hint" id="end-wait" hidden>Waiting for the host to start a new game…</p>
       <div class="modal-actions">
         <button type="button" class="btn btn--ghost" id="end-leave-btn">Back to the lobby</button>
@@ -433,8 +457,13 @@
    * Draws the top card. When the draw pile is empty, the discard pile is
    * reshuffled, so no question comes back before all the others came out.
    * (We also avoid drawing the very last card again right after a reshuffle.)
+   *
+   * `themeWeights` (optional), e.g. {W:1, U:2.5, R:1, M:1}: picks a theme at
+   * random with these weights (among the themes still in the pile), then
+   * takes the first card of that theme. Used to ask a player more questions
+   * on the themes they get wrong. Without it, the top card is drawn.
    */
-  function drawCard(deck, rng = Math.random) {
+  function drawCard(deck, rng = Math.random, themeWeights = null) {
     let draw = deck.draw.slice();
     let discard = deck.discard.slice();
     let reshuffled = false;
@@ -447,7 +476,23 @@
         [draw[0], draw[j]] = [draw[j], draw[0]];
       }
     }
-    const id = draw.shift();
+    let index = 0;
+    if (themeWeights) {
+      const firstOfTheme = {};
+      draw.forEach((qid, i) => {
+        const t = QUESTIONS[qid] ? QUESTIONS[qid].t : '?';
+        if (!(t in firstOfTheme)) firstOfTheme[t] = i;
+      });
+      const themes = Object.keys(firstOfTheme);
+      const weightOf = (t) => Math.max(0, Number(themeWeights[t]) || 0) || 1;
+      let r = rng() * themes.reduce((sum, t) => sum + weightOf(t), 0);
+      for (const t of themes) {
+        index = firstOfTheme[t];
+        r -= weightOf(t);
+        if (r < 0) break;
+      }
+    }
+    const id = draw.splice(index, 1)[0];
     discard.push(id);
     return { id, deck: { draw, discard, last: id }, reshuffled };
   }
@@ -479,8 +524,9 @@
   /**
    * Current player rolls `roll`. Returns the new state plus everything the
    * UI needs to animate: path, bounce, chained effects, question to ask.
+   * `themeWeights`: see drawCard (optional).
    */
-  function playRoll(state, roll, rng = Math.random) {
+  function playRoll(state, roll, rng = Math.random, themeWeights = null) {
     if (state.phase !== 'roll') throw new Error('Cannot roll now (phase: ' + state.phase + ').');
     if (!Number.isInteger(roll) || roll < 1 || roll > 6) throw new Error('Invalid roll: ' + roll);
 
@@ -498,7 +544,7 @@
       s.phase = 'over';
       s.winner = s.current;
     } else if (res.needsQuestion) {
-      const drawn = drawCard(s.deck, rng);
+      const drawn = drawCard(s.deck, rng, themeWeights);
       s.deck = drawn.deck;
       questionId = drawn.id;
       s.phase = 'question';
@@ -644,6 +690,9 @@
   let game = null;   // public game state, as currently *shown*
   const net = {
     seq: -1,         // last server event we have queued
+    chatSeq: -1,     // last chat message we have shown
+    clockOffset: 0,  // server clock − our clock, for the question countdown
+    questionSeconds: 30,
     queue: [],       // events waiting to be animated
     processing: false,
     acting: false,   // a roll/answer/start request is on its way
@@ -656,6 +705,7 @@
     hop: null,
     question: null,  // { id, order, mine, sending, shown }
     continueResolve: null,
+    timer: null,     // question countdown interval
     cells: [],
     lastFocus: null,
     leaveTimer: null,
@@ -687,6 +737,9 @@
 
   function showScreen(id) {
     for (const s of SCREENS) $(s).hidden = s !== id;
+    // One chat panel, moved to the screen that needs it.
+    if (id === 'room-screen') $('room-chat-slot').append($('chat-card'));
+    if (id === 'game-screen') $('game-chat-slot').append($('chat-card'));
     $('user-box').hidden = !me;
     if (me) $('user-name').textContent = '👤 ' + me.username;
   }
@@ -723,7 +776,7 @@
     net.acting = true;
     updateControls();
     try {
-      ingest(await api('POST', roomUrl(action), Object.assign({ since: net.seq }, extra)));
+      ingest(await api('POST', roomUrl(action), Object.assign({ since: net.seq, chatSince: net.chatSeq }, extra)));
       return true;
     } catch (err) {
       if (err.status === 401) { onLoggedOut(); return false; }
@@ -742,7 +795,7 @@
       if (!room) return;
       const code = room.code;
       try {
-        const data = await api('GET', roomUrl() + '?since=' + net.seq);
+        const data = await api('GET', roomUrl() + '?since=' + net.seq + '&chat=' + net.chatSeq);
         if (!room || room.code !== code) return;
         if (net.offline) { net.offline = false; toast('Connected again.', 'good'); }
         ingest(data);
@@ -764,6 +817,9 @@
     if (data.closed) return backToLobby();
     const v = data.room;
     if (!v) return;
+    if (v.serverNow) net.clockOffset = v.serverNow - Date.now();
+    if (v.questionSeconds) net.questionSeconds = v.questionSeconds;
+    receiveChat(v);
     if (v.resync || net.seq < 0) return applySnapshot(v);
     if (v.seq < net.seq) return; // an older answer arriving late
     room = { code: v.code, hostId: v.hostId, status: v.status, seats: v.seats };
@@ -884,7 +940,7 @@
   function onLoggedOut() {
     stopPolling();
     ui.token++;
-    me = null; room = null; game = null; net.seq = -1; net.queue = []; net.processing = false;
+    me = null; room = null; game = null; net.seq = -1; resetChat(); net.queue = []; net.processing = false;
     closeModal($('question-modal'));
     closeModal($('end-modal'));
     showScreen('auth-screen');
@@ -898,7 +954,7 @@
     if (code) {
       try {
         room = { code };
-        net.seq = -1;
+        net.seq = -1; resetChat();
         ingest(await api('GET', '/api/rooms/' + encodeURIComponent(code) + '?since=-1'));
         startPolling();
         return;
@@ -927,7 +983,7 @@
     $('create-btn').disabled = $('join-btn').disabled = true;
     try {
       const data = await request();
-      net.seq = -1;
+      net.seq = -1; resetChat();
       ingest(data);
       startPolling();
     } catch (err) {
@@ -956,7 +1012,7 @@
   function backToLobby(message) {
     stopPolling();
     ui.token++;
-    room = null; game = null; net.seq = -1; net.queue = []; net.processing = false; ui.question = null;
+    room = null; game = null; net.seq = -1; resetChat(); net.queue = []; net.processing = false; ui.question = null;
     localStorage.removeItem('goose.room');
     closeModal($('question-modal'));
     closeModal($('end-modal'));
@@ -1002,6 +1058,226 @@
       toast('Code copied: ' + room.code, 'good');
     } catch {
       toast('Copy failed: the code is ' + room.code, 'info');
+    }
+  }
+
+  /* =================================================================
+     CHAT & REACTIONS
+     Messages are shown as soon as they arrive (not queued behind the
+     animations). Reactions also float above the sender's pawn.
+     ================================================================= */
+  const REACTIONS = ['👍', '😂', '😮', '😬', '🎉', '🦆'];
+  const seatOfUser = (userId) => (room ? room.seats.findIndex((s) => s.userId === userId) : -1);
+  const serverNow = () => Date.now() + net.clockOffset;
+
+  function resetChat() {
+    net.chatSeq = -1;
+    $('chat-log').textContent = '';
+  }
+
+  function receiveChat(v) {
+    if (!Array.isArray(v.chat)) return;
+    const firstLoad = net.chatSeq < 0;
+    for (const m of v.chat) {
+      if (m.id <= net.chatSeq) continue;
+      addChatLine(m);
+      // Only fresh reactions float (not the history loaded when joining)
+      if (!firstLoad && m.emoji && serverNow() - m.at < 15000) floatReaction(m);
+    }
+    if (Number.isInteger(v.chatSeq) && v.chatSeq > net.chatSeq) net.chatSeq = v.chatSeq;
+  }
+
+  function addChatLine(m) {
+    const log = $('chat-log');
+    const seat = seatOfUser(m.userId);
+    const mine = !!me && m.userId === me.id;
+    const who = mine ? 'You' : m.username;
+    const li = el('li', { class: 'chat-line' + (mine ? ' chat-line--me' : '') + (m.emoji ? ' chat-line--emoji' : '') }, [
+      el('span', { class: 'chat-who', text: who + (m.emoji ? '' : ':') }), ' ',
+      el('span', { class: 'chat-text', text: m.emoji || m.text })
+    ]);
+    if (m.emoji) li.setAttribute('aria-label', `${who} reacted ${m.emoji}`);
+    li.style.borderLeftColor = seat >= 0 ? colorOf(seat).hex : '#9ca3af';
+    log.append(li);
+    while (log.children.length > 60) log.firstChild.remove();
+    log.scrollTop = log.scrollHeight;
+  }
+
+  /** A big emoji that rises above the sender's pawn (or over the question). */
+  function floatReaction(m) {
+    let x = window.innerWidth / 2, y = window.innerHeight / 3;
+    const seat = seatOfUser(m.userId);
+    const modal = !$('question-modal').hidden ? $('question-modal').querySelector('.modal') : null;
+    if (modal) {
+      const r = modal.getBoundingClientRect();
+      x = r.left + r.width * (0.15 + 0.7 * Math.random());
+      y = r.top + 20;
+    } else if (game && seat >= 0 && !$('game-screen').hidden && ui.cells.length) {
+      const pos = ui.displayPos[seat] != null ? ui.displayPos[seat] : game.players[seat].pos;
+      const r = ui.cells[pos].getBoundingClientRect();
+      x = r.left + r.width / 2;
+      y = r.top + r.height / 3;
+    } else {
+      const r = $('chat-card').getBoundingClientRect();
+      if (r.width) { x = r.left + r.width / 2; y = r.top + 20; }
+    }
+    const bubble = el('span', { class: 'float-reaction', text: m.emoji, 'aria-hidden': 'true' });
+    bubble.style.left = x + 'px';
+    bubble.style.top = y + 'px';
+    document.body.append(bubble);
+    setTimeout(() => bubble.remove(), 1900);
+  }
+
+  /** Sends a message or a reaction; the answer brings it back with the others. */
+  async function sendChatPayload(payload) {
+    if (!room) return false;
+    try {
+      ingest(await api('POST', roomUrl('chat'), Object.assign({ since: net.seq, chatSince: net.chatSeq }, payload)));
+      return true;
+    } catch (err) {
+      if (err.status === 401) { onLoggedOut(); return false; }
+      toast(err.message, 'bad');
+      return false;
+    }
+  }
+
+  async function submitChat(e) {
+    e.preventDefault();
+    const input = $('chat-input');
+    if (!input.value.trim()) return;
+    $('chat-send').disabled = true;
+    const ok = await sendChatPayload({ text: input.value });
+    $('chat-send').disabled = false;
+    if (ok) input.value = '';
+    input.focus();
+  }
+
+  function buildReactionButtons(container) {
+    container.textContent = '';
+    for (const emoji of REACTIONS) {
+      const btn = el('button', { type: 'button', class: 'reaction', text: emoji, 'aria-label': 'React ' + emoji });
+      btn.addEventListener('click', () => sendChatPayload({ emoji }));
+      container.append(btn);
+    }
+  }
+
+  /* =================================================================
+     QUESTION COUNTDOWN
+     The server sets the deadline and has the last word: an answer that
+     arrives too late counts as "time's up". This only shows the clock.
+     ================================================================= */
+  function startQuestionTimer(deadline) {
+    stopQuestionTimer();
+    if (!deadline) return;
+    const total = net.questionSeconds;
+    let warned = false;
+    $('q-timer').hidden = false;
+    const tick = () => {
+      const left = Math.max(0, Math.min(total, Math.ceil((deadline - serverNow()) / 1000)));
+      $('q-timer-bar').style.width = (left / total) * 100 + '%';
+      $('q-timer').classList.toggle('is-low', left <= 10);
+      $('q-timer-text').textContent = left > 0 ? left + ' s' : "Time's up!";
+      const qs = ui.question;
+      if (left <= 10 && left > 0 && !warned && qs && qs.mine && !qs.shown) {
+        warned = true;
+        toast('⏳ 10 seconds left!', 'bad');
+      }
+      if (left === 0) {
+        stopQuestionTimer(false);
+        if (qs && !qs.shown) {
+          if (qs.mine) qs.sending = true; // no more answers from the keyboard either
+          [...$('q-options').children].forEach((b) => { b.disabled = true; });
+          $('q-hint').hidden = false;
+          $('q-hint').textContent = "⏰ Time's up!";
+        }
+      }
+    };
+    tick();
+    ui.timer = setInterval(tick, 250);
+  }
+  function stopQuestionTimer(hide = true) {
+    clearInterval(ui.timer);
+    ui.timer = null;
+    if (hide) $('q-timer').hidden = true;
+  }
+
+  /* =================================================================
+     END-OF-GAME REPORT
+     Per theme results (this game and all games), strong and weak points,
+     and the questions missed, with the right answer and the explanation.
+     ================================================================= */
+  async function loadReport() {
+    const section = $('report');
+    const box = $('report-body');
+    if (!room || !me || seatOfUser(me.id) < 0) { section.hidden = true; return; }
+    section.hidden = false;
+    box.textContent = '';
+    box.append(el('p', { class: 'muted', text: 'Loading your report…' }));
+    const code = room.code;
+    try {
+      const data = await api('GET', roomUrl('report'));
+      if (room && room.code === code) renderReport(data.report);
+    } catch (err) {
+      box.textContent = '';
+      box.append(el('p', { class: 'muted', text: 'Report unavailable: ' + err.message }));
+    }
+  }
+
+  function renderReport(rep) {
+    const box = $('report-body');
+    const themeName = (t) => (THEMES[t] || { name: t }).name;
+    box.textContent = '';
+    box.append(el('p', {
+      class: 'report-score',
+      text: rep.answered
+        ? `This game: ${rep.correct} / ${rep.answered} correct` + (rep.timedOut ? ` · ${rep.timedOut} out of time` : '') + '.'
+        : 'You did not answer any question this game.'
+    }));
+
+    const tbody = el('tbody');
+    for (const t of rep.themes) {
+      const pct = t.overall.rate === null ? null : Math.round(t.overall.rate * 100);
+      const theme = THEMES[t.theme] || { color: '#374151' };
+      tbody.append(el('tr', {}, [
+        el('th', { scope: 'row' }, [el('span', { class: 'theme-dot', style: { background: theme.color }, 'aria-hidden': 'true' }), t.name]),
+        el('td', { class: 'num', text: t.game.answered ? `${t.game.correct}/${t.game.answered}` : '–' }),
+        el('td', {}, [
+          el('span', { class: 'meter', 'aria-hidden': 'true' }, [el('span', { style: { width: (pct || 0) + '%', background: theme.color } })]),
+          el('span', { class: 'meter-text', text: pct === null ? 'no answers yet' : `${pct}% (${t.overall.correct}/${t.overall.answered})` })
+        ])
+      ]));
+    }
+    box.append(el('table', { class: 'report-table' }, [
+      el('caption', { class: 'visually-hidden', text: 'Your results by theme' }),
+      el('thead', {}, [el('tr', {}, [
+        el('th', { scope: 'col', text: 'Theme' }),
+        el('th', { scope: 'col', class: 'num', text: 'This game' }),
+        el('th', { scope: 'col', text: 'All your games' })
+      ])]),
+      tbody
+    ]));
+
+    if (rep.strongest) box.append(el('p', { class: 'report-tip', text: `💪 Your strong point: ${themeName(rep.strongest)}.` }));
+    if (rep.weakest) box.append(el('p', { class: 'report-tip', text: `📚 To review: ${themeName(rep.weakest)}.` }));
+    if (rep.focus) box.append(el('p', { class: 'report-tip', text: `🎯 Your next games will ask you more ${themeName(rep.focus)} questions.` }));
+
+    if (rep.missed.length) {
+      box.append(el('h4', { text: `Questions to review (${rep.missed.length})` }));
+      const list = el('div', { class: 'missed' });
+      for (const m of rep.missed) {
+        const q = QUESTIONS[m.questionId];
+        if (!q) continue;
+        const yours = m.timedOut ? "⏰ Time's up: no answer" : m.choice !== null && q.o[m.choice] !== undefined ? '✗ Your answer: ' + q.o[m.choice] : null;
+        list.append(el('details', {}, [
+          el('summary', { text: q.q }),
+          yours ? el('p', { class: 'missed-yours', text: yours }) : null,
+          el('p', { class: 'missed-right', text: '✓ Right answer: ' + q.o[q.a] }),
+          el('p', { class: 'muted', text: q.e })
+        ]));
+      }
+      box.append(list);
+    } else if (rep.answered) {
+      box.append(el('p', { class: 'report-tip', text: '🎉 No mistakes this game!' }));
     }
   }
 
@@ -1399,7 +1675,10 @@
       btn.addEventListener('click', () => sendAnswer(orig));
       box.append(btn);
     });
+    // The others can react while they wait; the one answering stays focused.
+    $('q-reactions').hidden = mine;
     openModal($('question-modal'), mine ? box.firstChild : null);
+    startQuestionTimer(game.pending && game.pending.questionId === id ? game.pending.deadline : null);
   }
 
   async function sendAnswer(orig) {
@@ -1426,6 +1705,8 @@
     if ($('question-modal').hidden || !ui.question || ui.question.id !== ev.questionId) openQuestion(ev.questionId);
     const q = QUESTIONS[ev.questionId];
     ui.question.shown = true;
+    stopQuestionTimer();
+    const late = !!ev.timedOut;
 
     // Mark options (with text, not only color)
     [...$('q-options').children].forEach((btn) => {
@@ -1449,7 +1730,12 @@
     fb.className = 'feedback ' + (ev.correct ? 'ok' : 'ko');
     fb.textContent = '';
     fb.append(
-      el('p', { class: 'fb-title', text: ev.correct ? (mine ? '🎉 Correct!' : `🎉 ${name} got it right!`) : (mine ? '❌ Not quite!' : `❌ ${name} got it wrong.`) }),
+      el('p', {
+        class: 'fb-title',
+        text: late ? (mine ? "⏰ Time's up!" : `⏰ ${name} ran out of time.`)
+          : ev.correct ? (mine ? '🎉 Correct!' : `🎉 ${name} got it right!`)
+          : (mine ? '❌ Not quite!' : `❌ ${name} got it wrong.`)
+      }),
       el('p', { text: ev.correct ? `${who} stay${mine ? '' : 's'} on square ${ev.landing}.` : `${who} go${mine ? '' : 'es'} back to ${squareName(ev.start)}.` }),
       el('p', {}, [el('strong', { text: `Answer: ${letter}. ${q.o[q.a]}` })]),
       el('p', { text: q.e })
@@ -1458,7 +1744,9 @@
     $('q-hint').hidden = true;
     $('q-continue').hidden = false;
     $('q-continue').focus();
-    log(ev.correct ? `${name} answered correctly and stays on square ${ev.landing}.` : `${name} answered wrong and goes back to ${squareName(ev.start)}.`, i);
+    log(ev.correct ? `${name} answered correctly and stays on square ${ev.landing}.`
+      : late ? `${name} ran out of time and goes back to ${squareName(ev.start)}.`
+      : `${name} answered wrong and goes back to ${squareName(ev.start)}.`, i);
     renderPlayers(ev.state);
 
     // Wait for "Continue" (others' answers also close by themselves after a while)
@@ -1500,6 +1788,7 @@
     renderAll();
     renderEndButtons();
     openModal($('end-modal'), isHost() ? $('play-again-btn') : $('end-leave-btn'));
+    loadReport();
   }
   function renderEndButtons() {
     const host = isHost();
@@ -1520,6 +1809,7 @@
     if (target) { if (!target.matches('button')) target.tabIndex = -1; target.focus(); }
   }
   function closeModal(modal) {
+    if (modal.id === 'question-modal') stopQuestionTimer();
     if (modal.hidden) return;
     modal.hidden = true;
     if ($('question-modal').hidden && $('end-modal').hidden) {
@@ -1594,6 +1884,9 @@
   $('leave-game-btn').addEventListener('click', handleLeaveGame);
   $('play-again-btn').addEventListener('click', () => roomAction('start'));
   $('end-leave-btn').addEventListener('click', leaveRoom);
+  $('chat-form').addEventListener('submit', submitChat);
+  buildReactionButtons($('chat-reactions'));
+  buildReactionButtons($('q-reactions'));
   window.addEventListener('load', drawRoad);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawRoad);
   const baseTitle = document.title;

@@ -9,7 +9,8 @@ style.css         all the styles (colors, board, modals…)
 icons/            SVG drawings of the special squares
 images/           Duck Runner logo (animated GIF, plus a still one for reduced motion)
 server.js         web server + JSON API (accounts, rooms)
-server/           accounts.js (passwords, sessions), rooms.js (codes, room actions),
+server/           accounts.js (passwords, sessions), rooms.js (codes, room actions, timer, chat),
+                  stats.js (adaptive questions, end-of-game report),
                   db.js (PostgreSQL), logic.js (loads the rules from index.html)
 tests.js          game rule tests
 tests-server.js   account, room and API tests (in-memory database)
@@ -44,10 +45,17 @@ Every push to `main` deploys again. On the free plan the server sleeps after 15 
 3. The others click **Join a game** and type the code. A game holds up to 6 players.
 4. The host (whoever created the game) clicks **Start the game**.
 5. On your turn, click **Roll the die**. Your pawn moves square by square, and every player sees it move.
-   - **Question square:** answer the question shown in the pop-up. If you're right you stay on the square; if you're wrong you go back to where your turn started. The other players see the question and your answer.
+   - **Question square:** answer the question shown in the pop-up within **30 seconds**. If you're right you stay on the square; if you're wrong, or time runs out, you go back to where your turn started. The other players see the question, the countdown and your answer, and can react while they wait.
    - **Special square:** its effect applies automatically. The table below lists them.
    - You must land exactly on **FINISH**. If your roll is too high, the pawn bounces back by the extra squares.
 6. The first player on FINISH wins. Players are ranked by their square, then by how many questions they answered correctly. The host can start a new game with the same players.
+
+### What the online version adds
+
+- **Questions that adapt to you.** The server remembers every answer of every player. When you land on a question square, it picks the theme with odds based on your mistakes: a theme you always get wrong comes about 3 times more often than one you always get right. A new player gets an even mix. A question still never comes back before the others in the deck have been used.
+- **A 30-second countdown** on each question. The server sets the deadline and has the last word: an answer that arrives too late counts as "time's up", and if nobody answers, the turn moves on by itself.
+- **Chat and reactions.** Send short messages (200 characters max) from the waiting room or during the game. The reaction buttons (👍 😂 😮 😬 🎉 🦆) also float above your pawn on the other players' boards, and the players waiting during someone else's question can react from the question pop-up.
+- **A personal report at the end of each game.** Your score by theme for this game and for all your games, your strong point, the theme to review, the theme your next games will focus on, and every question you missed, with your answer, the right answer and the explanation.
 
 The server rolls the die, checks the answers and enforces the turns, so nobody can play out of turn. If you reload or close the page, you return to your game when you log in again. If a player leaves during a game, their turns are skipped. If the host leaves, another player becomes the host.
 

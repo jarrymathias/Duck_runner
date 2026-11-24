@@ -172,6 +172,114 @@ const throwsStatus = (fn, status) => assert.throws(fn, (e) => e.status === statu
     assert.deepStrictEqual(v.events.map((e) => e.seq), [r.seq - 1, r.seq]);
   });
 
+  console.log('Question timer');
+  const playing = () => rooms.startGame(rooms.joinRoom(rooms.createRoom('K7P2XM', alice), bob), alice);
+  const T0 = 1_000_000;
+  const askAlice = () => rooms.roll(playing(), alice, 1, { now: T0 }); // square 1 = question
+  const LIMIT = rooms.QUESTION_SECONDS * 1000 + rooms.ANIMATION_ALLOWANCE_MS + rooms.GRACE_MS;
+  await test('a question gets a deadline', () => {
+    const r = askAlice();
+    assert.strictEqual(r.game.pending.deadline, T0 + rooms.QUESTION_SECONDS * 1000 + rooms.ANIMATION_ALLOWANCE_MS);
+    assert.strictEqual(rooms.isTimedOut(r, T0 + LIMIT), false);
+    assert.strictEqual(rooms.isTimedOut(r, T0 + LIMIT + 1), true);
+  });
+  await test('an answer in time counts', () => {
+    const r0 = askAlice();
+    const q = L.QUESTIONS[r0.game.pending.questionId];
+    const r = rooms.answer(r0, alice, q.a, T0 + LIMIT);
+    const ev = r.events[r.events.length - 1];
+    assert.strictEqual(ev.correct, true);
+    assert.strictEqual(ev.timedOut, false);
+  });
+  await test('a late answer is "time\'s up", even if right', () => {
+    const r0 = askAlice();
+    const q = L.QUESTIONS[r0.game.pending.questionId];
+    const r = rooms.answer(r0, alice, q.a, T0 + LIMIT + 1);
+    const ev = r.events[r.events.length - 1];
+    assert.strictEqual(ev.correct, false);
+    assert.strictEqual(ev.timedOut, true);
+    assert.strictEqual(ev.choice, null);
+    assert.strictEqual(r.game.players[0].pos, 0);
+    assert.strictEqual(r.game.current, 1);
+  });
+  await test('expireQuestion settles only expired questions', () => {
+    const r0 = askAlice();
+    assert.strictEqual(rooms.expireQuestion(r0, T0 + 1000), r0);
+    const r = rooms.expireQuestion(r0, T0 + LIMIT + 1);
+    const ev = r.events[r.events.length - 1];
+    assert.strictEqual(ev.type, 'answer');
+    assert.strictEqual(ev.timedOut, true);
+    assert.strictEqual(ev.userId, alice.id);
+    assert.strictEqual(r.game.phase, 'roll');
+    assert.strictEqual(rooms.expireQuestion(playing(), T0 + 10 ** 9).game.phase, 'roll'); // no question: unchanged
+  });
+
+  console.log('Chat');
+  await test('messages are cleaned, reactions are checked, history is capped', () => {
+    let r = rooms.joinRoom(rooms.createRoom('K7P2XM', alice), bob);
+    r = rooms.chat(r, bob, { text: ' hello\n\tthere ' });
+    assert.strictEqual(r.chat[0].text, 'hello there');
+    r = rooms.chat(r, alice, { emoji: '🎉' });
+    assert.strictEqual(r.chat[1].emoji, '🎉');
+    throwsStatus(() => rooms.chat(r, bob, { emoji: 'lol' }), 400);
+    throwsStatus(() => rooms.chat(r, bob, { text: '   ' }), 400);
+    throwsStatus(() => rooms.chat(r, carol, { text: 'hi' }), 403);
+    for (let i = 0; i < 40; i++) r = rooms.chat(r, bob, { text: 'm' + i });
+    assert.strictEqual(r.chat.length, 30);
+    assert.strictEqual(r.chatSeq, 42);
+    assert.deepStrictEqual(rooms.view(r, -1, 40).chat.map((m) => m.id), [41, 42]);
+    assert.strictEqual(rooms.view(r, -1, -1).chat.length, 30);
+    assert.strictEqual(r.seq, rooms.joinRoom(rooms.createRoom('K7P2XM', alice), bob).seq); // chat is not a game event
+  });
+
+  console.log('Learning stats');
+  const stats = require('./server/stats');
+  await test('weights: unseen themes even, weak themes weigh more', () => {
+    const w0 = stats.themeWeights([]);
+    assert.deepStrictEqual(w0, { W: 2.5, U: 2.5, R: 2.5, M: 2.5 });
+    const w = stats.themeWeights([
+      { theme: 'U', answered: 10, correct: 0 },
+      { theme: 'W', answered: 10, correct: 10 }
+    ]);
+    assert.ok(w.U > w.R && w.R > w.W, JSON.stringify(w));
+    assert.ok(w.U / w.W > 2.5);
+  });
+  await test('rolls use the weights (server side)', () => {
+    let u = 0;
+    for (let i = 0; i < 40; i++) {
+      const r = rooms.roll(playing(), alice, 1, { themeWeights: { W: 0.01, U: 50, R: 0.01, M: 0.01 } });
+      if (L.QUESTIONS[r.game.pending.questionId].t === 'U') u++;
+    }
+    assert.ok(u >= 36, 'U drawn ' + u + '/40');
+  });
+  await test('report: per theme, weakest, strongest, missed questions', () => {
+    const qid = (t, n = 0) => L.QUESTIONS.map((q, i) => (q.t === t ? i : -1)).filter((i) => i >= 0)[n];
+    const game = [
+      { question_id: qid('U'), theme: 'U', correct: false, timed_out: false, choice: 2 },
+      { question_id: qid('U', 1), theme: 'U', correct: false, timed_out: true, choice: null },
+      { question_id: qid('W'), theme: 'W', correct: true, timed_out: false, choice: L.QUESTIONS[qid('W')].a }
+    ];
+    const overall = [{ theme: 'U', answered: 6, correct: 1 }, { theme: 'W', answered: 5, correct: 5 }, { theme: 'M', answered: 1, correct: 0 }];
+    const rep = stats.buildReport(game, overall);
+    assert.strictEqual(rep.answered, 3);
+    assert.strictEqual(rep.correct, 1);
+    assert.strictEqual(rep.timedOut, 1);
+    assert.strictEqual(rep.weakest, 'U');
+    assert.strictEqual(rep.strongest, 'W');
+    assert.strictEqual(rep.focus, 'U');
+    assert.deepStrictEqual(rep.missed.map((m) => [m.choice, m.timedOut]), [[2, false], [null, true]]);
+    const u = rep.themes.find((t) => t.theme === 'U');
+    assert.deepStrictEqual(u.game, { answered: 2, correct: 0 });
+    assert.strictEqual(rep.themes.find((t) => t.theme === 'M').overall.answered, 1);
+  });
+  await test('report with no answers yet', () => {
+    const rep = stats.buildReport([], []);
+    assert.strictEqual(rep.answered, 0);
+    assert.strictEqual(rep.weakest, null);
+    assert.strictEqual(rep.strongest, null);
+    assert.deepStrictEqual(rep.missed, []);
+  });
+
   console.log('HTTP server + SQL (in-memory PostgreSQL)');
   let server;
   try {
@@ -267,16 +375,46 @@ const throwsStatus = (fn, status) => assert.throws(fn, (e) => e.status === statu
       // Bob's poll sees exactly the new event; a second poll says "unchanged"
       r = await B('GET', `/api/rooms/${code}?since=${seq}`);
       assert.deepStrictEqual(r.body.room.events.map((e) => e.type), ['roll']);
-      r = await B('GET', `/api/rooms/${code}?since=${r.body.room.seq}`);
+      r = await B('GET', `/api/rooms/${code}?since=${r.body.room.seq}&chat=${r.body.room.chatSeq}`);
       assert.strictEqual(r.body.unchanged, true);
+      // Squares 1 to 6 are all question squares: Alice must answer, before the deadline.
       let g = (await A('GET', `/api/rooms/${code}?since=-1`)).body.room.game;
-      if (g.phase === 'question') {
-        r = await A('POST', `/api/rooms/${code}/answer`, { choice: 0 });
-        assert.strictEqual(r.status, 200);
-        g = r.body.room.game;
-      }
+      assert.strictEqual(g.phase, 'question');
+      assert.ok(g.pending.deadline > Date.now() + 25000);
+      r = await A('POST', `/api/rooms/${code}/answer`, { choice: 0 });
+      assert.strictEqual(r.status, 200);
+      g = r.body.room.game;
       assert.strictEqual(g.current, 1);
       assert.strictEqual((await B('POST', `/api/rooms/${code}/roll`, {})).status, 200);
+    });
+    await test('answers are saved: end-of-game report and adaptive stats', async () => {
+      const r = await A('GET', `/api/rooms/${code}/report`);
+      assert.strictEqual(r.status, 200);
+      const rep = r.body.report;
+      assert.strictEqual(rep.answered, 1);
+      assert.strictEqual(rep.themes.length, 4);
+      assert.strictEqual(rep.missed.length, 1 - rep.correct);
+      assert.ok(['W', 'U', 'R', 'M'].includes(rep.focus));
+      assert.strictEqual((await client()('GET', `/api/rooms/${code}/report`)).status, 401);
+    });
+    await test('chat: messages, reactions, limits', async () => {
+      let r = await B('POST', `/api/rooms/${code}/chat`, { text: '  Nice   roll! <b>hi</b> ', chatSince: 0 });
+      assert.strictEqual(r.status, 200);
+      const msg = r.body.room.chat[r.body.room.chat.length - 1];
+      assert.strictEqual(msg.text, 'Nice roll! <b>hi</b>'); // stored as text; the page never renders it as HTML
+      assert.strictEqual(msg.username, 'Bob');
+      r = await B('POST', `/api/rooms/${code}/chat`, { emoji: '😂' });
+      assert.strictEqual(r.status, 429); // too fast
+      await new Promise((ok) => setTimeout(ok, 650));
+      r = await B('POST', `/api/rooms/${code}/chat`, { emoji: '😂' });
+      assert.strictEqual(r.status, 200);
+      await new Promise((ok) => setTimeout(ok, 650));
+      assert.strictEqual((await B('POST', `/api/rooms/${code}/chat`, { emoji: '💩' })).status, 400);
+      await new Promise((ok) => setTimeout(ok, 650));
+      assert.strictEqual((await B('POST', `/api/rooms/${code}/chat`, { text: 'x'.repeat(201) })).status, 400);
+      // Alice's poll gets only the messages after the one she has
+      r = await A('GET', `/api/rooms/${code}?since=-1&chat=1`);
+      assert.deepStrictEqual(r.body.room.chat.map((m) => m.emoji || m.text), ['😂']);
     });
     await test('log out ends the session', async () => {
       await C('POST', '/api/logout', {});

@@ -49,6 +49,47 @@ async function migrate() {
       data       jsonb NOT NULL,
       updated_at timestamptz NOT NULL DEFAULT now()
     )`);
+  // One row per question a player answered (or ran out of time on):
+  // feeds the adaptive questions and the end-of-game report.
+  await query(`
+    CREATE TABLE IF NOT EXISTS answers (
+      id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      user_id     integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      room_code   text NOT NULL,
+      game_no     integer NOT NULL,
+      question_id integer NOT NULL,
+      theme       text NOT NULL,
+      choice      integer,
+      correct     boolean NOT NULL,
+      timed_out   boolean NOT NULL DEFAULT false,
+      answered_at timestamptz NOT NULL DEFAULT now()
+    )`);
+  await query('CREATE INDEX IF NOT EXISTS answers_user ON answers (user_id)');
+}
+
+/* ---------------- Answers & stats ---------------- */
+
+async function insertAnswer(a) {
+  await query(
+    `INSERT INTO answers (user_id, room_code, game_no, question_id, theme, choice, correct, timed_out)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [a.userId, a.roomCode, a.gameNo, a.questionId, a.theme, a.choice, a.correct, a.timedOut]);
+}
+
+/** [{ theme, answered, correct }] over all the user's games. */
+async function themeStats(userId) {
+  const { rows } = await query(
+    `SELECT theme, count(*) AS answered, sum(CASE WHEN correct THEN 1 ELSE 0 END) AS correct
+     FROM answers WHERE user_id = $1 GROUP BY theme`, [userId]);
+  return rows.map((r) => ({ theme: r.theme, answered: Number(r.answered), correct: Number(r.correct) }));
+}
+
+/** The user's answers in one game, in order. */
+async function gameAnswers(userId, roomCode, gameNo) {
+  const { rows } = await query(
+    `SELECT question_id, theme, choice, correct, timed_out FROM answers
+     WHERE user_id = $1 AND room_code = $2 AND game_no = $3 ORDER BY id`, [userId, roomCode, gameNo]);
+  return rows;
 }
 
 /* ---------------- Users & sessions ---------------- */
@@ -142,6 +183,7 @@ async function cleanup() {
 
 module.exports = {
   connect, migrate, cleanup, ping,
+  insertAnswer, themeStats, gameAnswers,
   createUser, findUserByName, createSession, userForSession, deleteSession,
   insertRoom, getRoom, currentRoomCode, updateRoom
 };

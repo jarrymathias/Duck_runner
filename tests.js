@@ -244,5 +244,35 @@ test('loop protection: chained specials pointing at each other stop', () => {
   ok(res.effects.length <= L.MAX_CHAIN);
 });
 
+/* ---------- Adaptive draw (theme weights) ---------- */
+test('weighted draw favors the heavy theme but never repeats a question', () => {
+  const rng = mulberry32(7);
+  let deck = L.createDeck(L.QUESTIONS.length, rng);
+  const seen = new Set(), first20 = { W: 0, U: 0, R: 0, M: 0 };
+  for (let i = 0; i < L.QUESTIONS.length; i++) {
+    const d = L.drawCard(deck, rng, { W: 1, U: 6, R: 1, M: 1 });
+    ok(!seen.has(d.id), 'question repeated: ' + d.id);
+    seen.add(d.id);
+    if (i < 20) first20[L.QUESTIONS[d.id].t]++;
+    deck = d.deck;
+  }
+  eq(seen.size, L.QUESTIONS.length);
+  ok(first20.U >= 9, 'expected mostly U questions first, got ' + JSON.stringify(first20));
+});
+test('weighted draw only picks themes still in the pile', () => {
+  const uOnly = L.QUESTIONS.map((q, i) => (q.t === 'U' ? i : -1)).filter((i) => i >= 0);
+  const d = L.drawCard({ draw: uOnly.slice(), discard: [], last: null }, mulberry32(1), { W: 100, U: 1 });
+  eq(L.QUESTIONS[d.id].t, 'U');
+});
+test('playRoll passes the weights to the draw', () => {
+  let hits = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const g = L.createGame([{ name: 'A', color: '#000' }], { rng: mulberry32(seed) });
+    const r = L.playRoll(g, 1, mulberry32(seed + 100), { W: 0.01, U: 0.01, R: 50, M: 0.01 });
+    if (L.QUESTIONS[r.questionId].t === 'R') hits++;
+  }
+  ok(hits >= 36, 'R drawn ' + hits + '/40 times');
+});
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed ? 1 : 0);

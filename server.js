@@ -19,6 +19,8 @@ if (fs.existsSync(path.join(ROOT, '.env')) && typeof process.loadEnvFile === 'fu
 const db = require('./server/db');
 const accounts = require('./server/accounts');
 const rooms = require('./server/rooms');
+const stats = require('./server/stats');
+const L = require('./server/logic');
 
 const COOKIE = 'goose_sid';
 const MAX_BODY = 10 * 1024;
@@ -102,11 +104,29 @@ function rateLimit(req, username) {
 
 /* ---------------- Room polling shortcut ----------------
    Clients poll every second. This process is the only writer, so it remembers
-   each room's last event number and answers "nothing new" without the database. */
-const knownSeq = new Map(); // code -> seq
+   each room's last event and chat numbers (and question deadline) and answers
+   "nothing new" without the database. */
+const known = new Map(); // code -> { seq, chatSeq, deadline }
 function remember(room, code) {
-  if (room) knownSeq.set(room.code, room.seq);
-  else knownSeq.delete(code);
+  if (room) known.set(room.code, { seq: room.seq, chatSeq: room.chatSeq || 0, deadline: rooms.questionDeadline(room) });
+  else known.delete(code);
+}
+function unchanged(code, since, chatSince) {
+  const k = known.get(code);
+  if (!k || !Number.isInteger(since) || since < 0 || k.seq !== since || k.chatSeq !== chatSince) return false;
+  return !(k.deadline && Date.now() > k.deadline + rooms.GRACE_MS); // a question to expire is news
+}
+
+/* ---------------- Chat flood protection ---------------- */
+const chatTimes = new Map(); // userId -> timestamps of the last minute's messages
+function chatLimit(userId) {
+  const now = Date.now();
+  const recent = (chatTimes.get(userId) || []).filter((t) => now - t < 60000);
+  if (recent.length && now - recent[recent.length - 1] < 600) throw new HttpError(429, 'Slow down a little!');
+  if (recent.length >= 30) throw new HttpError(429, 'Too many messages, wait a minute.');
+  recent.push(now);
+  chatTimes.set(userId, recent);
+  if (chatTimes.size > 5000) for (const [k, v] of chatTimes) if (now - v[v.length - 1] > 60000) chatTimes.delete(k);
 }
 
 /* ---------------- API ---------------- */
@@ -128,6 +148,7 @@ function requireMember(room, user) {
   if (!room) throw new HttpError(404, 'No game has this code.');
   if (!room.seats.some((s) => s.userId === user.id)) throw new HttpError(403, 'Join this game first.');
 }
+const intOr = (v, d) => (Number.isInteger(v) ? v : d);
 
 async function startSession(req, res, user, status) {
   const token = accounts.newSessionToken();
@@ -136,16 +157,33 @@ async function startSession(req, res, user, status) {
     { 'Set-Cookie': sessionCookie(req, token, accounts.SESSION_DAYS * 86400) });
 }
 
+/** Saves the answers (and timeouts) an action produced, for stats and reports. */
+async function recordAnswers(before, after) {
+  if (!after) return;
+  const fresh = after.events.filter((e) => e.type === 'answer' && e.seq > (before ? before.seq : 0));
+  for (const e of fresh) {
+    const q = L.QUESTIONS[e.questionId];
+    if (!q || !e.userId) continue;
+    try {
+      await db.insertAnswer({
+        userId: e.userId, roomCode: after.code, gameNo: after.gameNo || 1, questionId: e.questionId,
+        theme: q.t, choice: e.choice, correct: e.correct, timedOut: !!e.timedOut
+      });
+    } catch (err) { console.error('[stats] could not save an answer:', err.message); }
+  }
+}
+
 /** Runs a room action under a row lock and answers with the member's view. */
-async function act(res, code, user, since, change) {
+async function act(res, code, user, since, chatSince, change) {
   const result = await db.updateRoom(code, (room) => {
     requireMember(room, user);
     return change(room);
   });
   if (!result) throw new HttpError(404, 'No game has this code.');
   remember(result.after, code);
+  await recordAnswers(result.before, result.after);
   if (!result.after) return send(res, 200, { closed: true });
-  send(res, 200, { room: rooms.view(result.after, since) });
+  send(res, 200, { room: rooms.view(result.after, since, chatSince) });
 }
 
 const routes = [
@@ -193,7 +231,7 @@ const routes = [
       const room = rooms.createRoom(rooms.generateRoomCode(), user);
       if (await db.insertRoom(room)) {
         remember(room);
-        return send(res, 201, { room: rooms.view(room, 0) });
+        return send(res, 201, { room: rooms.view(room, -1) });
       }
     }
     throw new HttpError(503, 'Could not create a game code, please retry.');
@@ -202,21 +240,41 @@ const routes = [
   ['GET', /^\/api\/rooms\/([^/]+)$/, async (req, res, m, url) => {
     const user = await requireUser(req);
     const code = codeFrom(m[1]);
-    const since = url.searchParams.has('since') ? Number(url.searchParams.get('since')) : -1;
-    if (Number.isInteger(since) && since >= 0 && knownSeq.get(code) === since) {
-      return send(res, 200, { unchanged: true, seq: since });
-    }
-    const room = await db.getRoom(code);
+    const num = (name) => (url.searchParams.has(name) ? Number(url.searchParams.get(name)) : -1);
+    const since = num('since'), chatSince = num('chat');
+    if (unchanged(code, since, chatSince)) return send(res, 200, { unchanged: true, seq: since });
+
+    let room = await db.getRoom(code);
     requireMember(room, user);
+    if (rooms.isTimedOut(room)) {
+      // The player to answer ran out of time: any player's poll settles it.
+      const result = await db.updateRoom(code, (r) => rooms.expireQuestion(r));
+      if (result && result.after) {
+        await recordAnswers(result.before, result.after);
+        room = result.after;
+      }
+    }
     remember(room);
-    send(res, 200, { room: rooms.view(room, since) });
+    send(res, 200, { room: rooms.view(room, since, chatSince) });
   }],
 
-  ['POST', /^\/api\/rooms\/([^/]+)\/(join|start|roll|answer|leave)$/, async (req, res, m) => {
+  // The player's report for the game just played (or ?game=N).
+  ['GET', /^\/api\/rooms\/([^/]+)\/report$/, async (req, res, m, url) => {
+    const user = await requireUser(req);
+    const code = codeFrom(m[1]);
+    const room = await db.getRoom(code);
+    requireMember(room, user);
+    const gameNo = url.searchParams.has('game') ? Number(url.searchParams.get('game')) : room.gameNo || 1;
+    if (!Number.isInteger(gameNo) || gameNo < 1) throw new HttpError(400, 'Invalid game number.');
+    const [gameRows, overallRows] = await Promise.all([db.gameAnswers(user.id, code, gameNo), db.themeStats(user.id)]);
+    send(res, 200, { gameNo, report: stats.buildReport(gameRows, overallRows) });
+  }],
+
+  ['POST', /^\/api\/rooms\/([^/]+)\/(join|start|roll|answer|leave|chat)$/, async (req, res, m) => {
     const user = await requireUser(req);
     const code = codeFrom(m[1]);
     const body = await readJson(req);
-    const since = Number.isInteger(body.since) ? body.since : -1;
+    const since = intOr(body.since, -1), chatSince = intOr(body.chatSince, -1);
     const action = m[2];
 
     if (action === 'join') {
@@ -225,13 +283,17 @@ const routes = [
       remember(result.after);
       return send(res, 200, { room: rooms.view(result.after, -1) });
     }
+    if (action === 'chat') chatLimit(user.id);
+    // Adaptive questions: the roller's past answers set the odds of each theme.
+    const themeWeights = action === 'roll' ? stats.themeWeights(await db.themeStats(user.id)) : null;
     const change = {
       start: (room) => rooms.startGame(room, user),
-      roll: (room) => rooms.roll(room, user),
+      roll: (room) => rooms.roll(room, user, undefined, { themeWeights }),
       answer: (room) => rooms.answer(room, user, body.choice),
+      chat: (room) => rooms.chat(room, user, { text: body.text, emoji: body.emoji }),
       leave: (room) => rooms.leave(room, user)
     }[action];
-    await act(res, code, user, since, change);
+    await act(res, code, user, since, chatSince, change);
   }]
 ];
 
