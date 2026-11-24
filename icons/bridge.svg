@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Bridge: a wooden arch bridge over water -->
+  <path d="M0 48 q8 -5 16 0 t16 0 t16 0 t16 0 V64 H0 Z" fill="#38bdf8" stroke="#0369a1" stroke-width="2"/>
+  <path d="M4 56 q6 -3 12 0 M30 58 q6 -3 12 0 M48 55 q6 -3 12 0" fill="none" stroke="#e0f2fe" stroke-width="2" stroke-linecap="round"/>
+  <g stroke="#1f2937" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M4 44 Q32 14 60 44 L60 50 Q32 24 4 50 Z" fill="#b45309"/>
+    <path d="M12 41 V30 M22 33 V22 M32 30 V19 M42 33 V22 M52 41 V30" fill="none" stroke="#78350f" stroke-width="3"/>
+    <path d="M8 34 Q32 6 56 34" fill="none" stroke="#451a03" stroke-width="3.5"/>
+    <path d="M8 50 V58 M56 50 V58" fill="none" stroke="#451a03" stroke-width="4"/>
+  </g>
+</svg>

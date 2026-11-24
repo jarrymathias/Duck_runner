@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duck Runner — UX &amp; Design Edition</title>
+<link rel="icon" href="images/duck-runner-still.gif">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <h1 class="brand">
+    <picture>
+      <source srcset="images/duck-runner-still.gif" media="(prefers-reduced-motion: reduce)">
+      <img class="logo" src="images/duck-runner.gif" width="640" height="360" alt="Duck Runner">
+    </picture>
+    <span class="subtitle">UX &amp; Design Edition</span>
+  </h1>
+  <div class="user-box" id="user-box" hidden>
+    <span class="user-name" id="user-name"></span>
+    <button type="button" class="btn btn--small btn--ghost" id="logout-btn">Log out</button>
+  </div>
+</header>
+
+<main id="main">
+  <noscript><p class="card">This game needs JavaScript to run.</p></noscript>
+
+  <p class="card boot-msg" id="boot-screen" role="status">Connecting to the server…</p>
+
+  <!-- ===================== ACCOUNT SCREEN ===================== -->
+  <section id="auth-screen" hidden aria-labelledby="auth-title">
+    <div class="setup-layout">
+      <form id="auth-form" class="card" novalidate>
+        <h2 id="auth-title">Log in</h2>
+        <div class="tabs" role="group" aria-label="Account">
+          <button type="button" class="tab" id="tab-login" aria-pressed="true">I have an account</button>
+          <button type="button" class="tab" id="tab-register" aria-pressed="false">Create an account</button>
+        </div>
+        <div class="field">
+          <label for="auth-username">Username</label>
+          <input type="text" id="auth-username" autocomplete="username" maxlength="20" spellcheck="false" required>
+          <p class="field-hint" id="username-hint" hidden>3 to 20 characters: letters, digits, “_”, “-” or “.”. Other players see this name.</p>
+        </div>
+        <div class="field">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" autocomplete="current-password" maxlength="200" required>
+          <p class="field-hint" id="password-hint" hidden>At least 6 characters.</p>
+        </div>
+        <p class="form-error" id="auth-error" role="alert" hidden></p>
+        <button type="submit" class="btn btn--big" id="auth-submit">Log in</button>
+      </form>
+      <section class="card rules" aria-labelledby="rules-title-1">
+        <h2 id="rules-title-1">How to play</h2>
+        <ul>
+          <li>Players take turns in order. Roll the die and move your pawn forward.</li>
+          <li>On a <strong>question square</strong>, answer the multiple-choice question.
+            <strong>Right:</strong> stay there. <strong>Wrong:</strong> go back to where you started your turn.</li>
+          <li class="rule-special"><img class="rule-icon" src="icons/bonus.svg" alt=""> <span><strong>Bonus</strong> (8, 21): move ahead 3 squares.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/bridge.svg" alt=""> <span><strong>Bridge</strong> (24): cross straight to square 28.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/shark.svg" alt=""> <span><strong>Shark</strong> (12): swim back 3 squares.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/typhoon.svg" alt=""> <span><strong>Typhoon</strong> (26): skip your next 2 turns.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/boat.svg" alt=""> <span><strong>Boat</strong> (29): sail back to square 5.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/rest.svg" alt=""> <span><strong>Rest</strong> (16, 27): a safe square, nothing happens.</span></li>
+          <li>After a bonus or a penalty move your turn ends, with no question, unless you land on another special square.</li>
+          <li>You must land <strong>exactly</strong> on FINISH. If your roll is too high, you bounce back by the extra squares.</li>
+          <li>The first player to reach FINISH wins!</li>
+        </ul>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===================== LOBBY SCREEN ===================== -->
+  <section id="lobby-screen" hidden aria-labelledby="lobby-title">
+    <div class="setup-layout">
+      <div class="card lobby-card">
+        <h2 id="lobby-title">Play with friends</h2>
+        <p>Create a game and share its code, or type the code a friend gave you. Each player plays from their own device, with their own account.</p>
+        <div class="lobby-actions">
+          <section class="lobby-block" aria-labelledby="create-title">
+            <h3 id="create-title">New game</h3>
+            <p class="muted">You get a code made of letters and digits.</p>
+            <button type="button" class="btn btn--big" id="create-btn">Create a game</button>
+          </section>
+          <form class="lobby-block" id="join-form" novalidate aria-labelledby="join-title">
+            <h3 id="join-title">Join a game</h3>
+            <label for="join-code">Game code</label>
+            <div class="join-row">
+              <input type="text" id="join-code" class="code-input" maxlength="7" autocomplete="off" spellcheck="false" placeholder="K7P2XM" required>
+              <button type="submit" class="btn" id="join-btn">Join</button>
+            </div>
+          </form>
+        </div>
+        <p class="form-error" id="lobby-error" role="alert" hidden></p>
+      </div>
+      <section class="card rules" aria-labelledby="rules-title-2">
+        <h2 id="rules-title-2">How to play</h2>
+        <ul>
+          <li>Players take turns in order. Roll the die and move your pawn forward.</li>
+          <li>On a <strong>question square</strong>, answer the multiple-choice question.
+            <strong>Right:</strong> stay there. <strong>Wrong:</strong> go back to where you started your turn.</li>
+          <li class="rule-special"><img class="rule-icon" src="icons/bonus.svg" alt=""> <span><strong>Bonus</strong> (8, 21): move ahead 3 squares.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/bridge.svg" alt=""> <span><strong>Bridge</strong> (24): cross straight to square 28.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/shark.svg" alt=""> <span><strong>Shark</strong> (12): swim back 3 squares.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/typhoon.svg" alt=""> <span><strong>Typhoon</strong> (26): skip your next 2 turns.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/boat.svg" alt=""> <span><strong>Boat</strong> (29): sail back to square 5.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/rest.svg" alt=""> <span><strong>Rest</strong> (16, 27): a safe square, nothing happens.</span></li>
+          <li>After a bonus or a penalty move your turn ends, with no question, unless you land on another special square.</li>
+          <li>You must land <strong>exactly</strong> on FINISH. If your roll is too high, you bounce back by the extra squares.</li>
+          <li>The first player to reach FINISH wins!</li>
+        </ul>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===================== WAITING ROOM ===================== -->
+  <section id="room-screen" hidden aria-labelledby="room-title">
+    <div class="setup-layout">
+      <div class="card">
+        <h2 id="room-title">Waiting room</h2>
+        <p>Give this code to the other players:</p>
+        <div class="code-box">
+          <span class="room-code" id="room-code" aria-label="Game code"></span>
+          <button type="button" class="btn btn--small btn--ghost" id="copy-code-btn">Copy</button>
+        </div>
+        <h3 id="room-players-title">Players <span class="muted" id="room-count"></span></h3>
+        <ul class="player-list" id="room-players" aria-labelledby="room-players-title"></ul>
+        <p class="room-status" id="room-status" aria-live="polite"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn--ghost" id="room-leave-btn">Leave</button>
+          <button type="button" class="btn btn--big" id="room-start-btn">Start the game</button>
+        </div>
+      </div>
+      <section class="card rules" aria-labelledby="rules-title-3">
+        <h2 id="rules-title-3">How to play</h2>
+        <ul>
+          <li>Players take turns in order. Roll the die and move your pawn forward.</li>
+          <li>On a <strong>question square</strong>, answer the multiple-choice question.
+            <strong>Right:</strong> stay there. <strong>Wrong:</strong> go back to where you started your turn.</li>
+          <li class="rule-special"><img class="rule-icon" src="icons/bonus.svg" alt=""> <span><strong>Bonus</strong> (8, 21): move ahead 3 squares.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/bridge.svg" alt=""> <span><strong>Bridge</strong> (24): cross straight to square 28.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/shark.svg" alt=""> <span><strong>Shark</strong> (12): swim back 3 squares.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/typhoon.svg" alt=""> <span><strong>Typhoon</strong> (26): skip your next 2 turns.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/boat.svg" alt=""> <span><strong>Boat</strong> (29): sail back to square 5.</span></li>
+          <li class="rule-special"><img class="rule-icon" src="icons/rest.svg" alt=""> <span><strong>Rest</strong> (16, 27): a safe square, nothing happens.</span></li>
+          <li>After a bonus or a penalty move your turn ends, with no question, unless you land on another special square.</li>
+          <li>You must land <strong>exactly</strong> on FINISH. If your roll is too high, you bounce back by the extra squares.</li>
+          <li>The first player to reach FINISH wins!</li>
+        </ul>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===================== GAME SCREEN ===================== -->
+  <section id="game-screen" hidden aria-label="Game">
+    <div class="game-layout">
+
+      <section class="card turn-card area-turn" aria-labelledby="turn-label">
+        <div class="turn-head">
+          <span id="turn-pawn" class="pawn pawn--lg" aria-hidden="true"></span>
+          <div>
+            <div class="label" id="turn-label">Now playing</div>
+            <div class="name" id="turn-name"></div>
+          </div>
+        </div>
+        <div class="die-zone">
+          <div id="die" class="die" role="img" aria-label="Die"></div>
+          <button type="button" class="btn btn--big" id="roll-btn">Roll the die</button>
+        </div>
+        <p class="roll-result" id="roll-result" aria-live="polite"></p>
+      </section>
+
+      <section class="card board-card area-board" aria-labelledby="board-title">
+        <h2 id="board-title" class="visually-hidden">Board</h2>
+        <div id="board" role="list" aria-label="Board squares from LEAVE to FINISH"></div>
+        <ul class="legend" id="legend" aria-label="Legend"></ul>
+      </section>
+
+      <section class="card area-players" aria-labelledby="players-title">
+        <h2 id="players-title">Players</h2>
+        <ul class="player-list" id="player-list"></ul>
+      </section>
+
+      <section class="card area-history" aria-labelledby="history-title">
+        <h2 id="history-title">History</h2>
+        <ol class="history" id="history"></ol>
+      </section>
+
+      <div class="area-actions">
+        <span class="game-code">Game code: <strong id="game-code"></strong></span>
+        <button type="button" class="btn btn--ghost" id="leave-game-btn">Leave game</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ===================== QUESTION MODAL ===================== -->
+<div class="modal-backdrop" id="question-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="q-text" aria-describedby="q-who">
+    <div class="modal-head" id="q-head"><span id="q-theme"></span><span id="q-square"></span></div>
+    <div class="modal-body">
+      <p class="q-who" id="q-who"></p>
+      <p class="q-text" id="q-text"></p>
+      <div class="options" id="q-options"></div>
+      <p class="key-hint" id="q-hint">Tip: press A, B, C or D to answer.</p>
+      <div class="feedback" id="q-feedback" role="status" hidden></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="q-continue" hidden>Continue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== END MODAL ===================== -->
+<div class="modal-backdrop" id="end-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="end-title">
+    <div class="modal-head end-head"><span id="end-title">Game over!</span></div>
+    <div class="modal-body">
+      <div class="trophy" aria-hidden="true">🏆</div>
+      <p class="winner-line" id="winner-line"></p>
+      <table class="rank-table">
+        <caption class="visually-hidden">Final ranking</caption>
+        <thead><tr><th class="num" scope="col">Rank</th><th scope="col">Player</th><th scope="col">Square</th><th class="num" scope="col">Correct answers</th></tr></thead>
+        <tbody id="rank-body"></tbody>
+      </table>
+      <p class="key-hint" id="end-wait" hidden>Waiting for the host to start a new game…</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn--ghost" id="end-leave-btn">Back to the lobby</button>
+        <button type="button" class="btn" id="play-again-btn">Play again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-zone" id="toast-zone" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ==========================================================================
+     GAME LOGIC (pure, no DOM).
+     This block is also loaded by tests.js (node tests.js), so keep it free of
+     any browser API. Everything here works on plain data and returns new state.
+     ========================================================================== -->
+<script id="game-logic">
+(function (root) {
+  'use strict';
+
+  /* ------------------------------------------------------------------------
+     QUESTIONS — edit freely.
+     t = theme (W Wireframes, U UX principles, R User research, M Methodologies)
+     q = question, o = 4 options, a = index of the correct option, e = explanation
+     ------------------------------------------------------------------------ */
+  const QUESTIONS = [
+    {t:'W', q:"What is a wireframe?", o:["A finished graphic mockup with colors and typography","A low-fidelity sketch showing the structure and layout of a page","A coded, working prototype","A brand style guide"], a:1, e:"It defines structure, hierarchy and placement of elements, not the look."},
+    {t:'W', q:"In what order does the fidelity of design deliverables usually increase?", o:["Mockup → Wireframe → Prototype","Prototype → Wireframe → Mockup","Wireframe → Mockup → Prototype","Mockup → Prototype → Wireframe"], a:2, e:"Structure first, then visual identity, then interactivity."},
+    {t:'W', q:"Why are wireframes often made in grayscale?", o:["Because design tools can't handle color","To keep feedback focused on structure rather than looks","To save ink when printing","Because accessibility standards require it"], a:1, e:"Without color, people discuss layout and flow instead of visual taste."},
+    {t:'W', q:"In a wireframe, what does a box with an X through it usually mean?", o:["A close button","An area to delete","An image placeholder","A layout error"], a:2, e:"It's the universal convention for an image or media placeholder."},
+    {t:'W', q:"Which placeholder text is commonly used in wireframes?", o:["Hello World","Lorem ipsum","Foo bar","Text goes here"], a:1, e:"Pseudo-Latin filler text, although realistic content often gets better feedback."},
+    {t:'W', q:"Which approach means designing for small screens first?", o:["Desktop first","Mobile first","Graceful degradation","Pixel perfect"], a:1, e:"It forces you to prioritize essential content, then enhance for larger screens."},
+    {t:'U', q:"What does Fitts's law describe?", o:["Decision time grows with the number of choices","The time to reach a target depends on its size and distance","We can hold about 7 items in memory","Items close together are seen as related"], a:1, e:"Bigger, closer targets are faster to reach."},
+    {t:'U', q:"What does Hick's law state?", o:["Decision time increases with the number and complexity of choices","Users prefer interfaces they already know","Big buttons get more clicks","Color affects emotions"], a:0, e:"Simplify menus and break complex tasks into steps."},
+    {t:'U', q:"According to Jakob's law, users…", o:["read all the content on a page","spend most of their time on other sites and expect yours to work the same way","always prefer innovation","ignore navigation menus"], a:1, e:"Following conventions reduces cognitive load."},
+    {t:'U', q:"Which Gestalt principle says that elements placed close together are perceived as a group?", o:["Similarity","Continuity","Proximity","Closure"], a:2, e:"Spacing alone is often enough to group information."},
+    {t:'U', q:"What does the F-shaped reading pattern describe?", o:["How users scan text-heavy pages","A 6-column layout grid","A design file format","Keyboard tab order"], a:0, e:"Two horizontal sweeps at the top, then a vertical scan down the left side."},
+    {t:'U', q:"What minimum contrast ratio does WCAG level AA require for normal-size text?", o:["2:1","3:1","4.5:1","7:1"], a:2, e:"3:1 applies to large text, and 7:1 to level AAA."},
+    {t:'U', q:"Which of Nielsen's heuristics says users should always know what is going on (loading, confirmation…)?", o:["Visibility of system status","Aesthetic and minimalist design","Flexibility and efficiency of use","Help and documentation"], a:0, e:"It's the first of the 10 heuristics: give timely, appropriate feedback."},
+    {t:'R', q:"What is a persona?", o:["A real customer you interviewed","A fictional user profile based on research data","The project manager","An avatar in the interface"], a:1, e:"It sums up the goals, needs and frustrations of a user segment."},
+    {t:'R', q:"What is card sorting mainly used for?", o:["Choosing a color palette","Shaping the information architecture around users' logic","Testing loading speed","Prioritizing the backlog"], a:1, e:"It reveals users' mental models."},
+    {t:'R', q:"What is the difference between open and closed card sorting?", o:["Open = online, closed = in person","Open = participants name the categories, closed = categories are given","Open = no time limit","There is no difference"], a:1, e:"Open sorting explores; closed sorting validates an existing structure."},
+    {t:'R', q:"According to Jakob Nielsen, how many users are usually enough to uncover most usability problems in a qualitative test?", o:["1","5","50","500"], a:1, e:"About 5 users reveal roughly 85% of the problems."},
+    {t:'R', q:"What is a user flow?", o:["A website's traffic","A diagram of the path a user takes to complete a task","A transition animation","An analytics report"], a:1, e:"It maps screens, decisions and actions, often before wireframing."},
+    {t:'M', q:"What are the 5 stages of Design Thinking (Stanford d.school model)?", o:["Plan, Code, Test, Ship, Maintain","Empathize, Define, Ideate, Prototype, Test","Analysis, Design, Build, Acceptance, Deployment","Discover, Sell, Build, Measure, Learn"], a:1, e:"The stages are iterative, not strictly linear."},
+    {t:'M', q:"The Double Diamond model alternates between…", o:["design and development","divergent and convergent phases","mobile and desktop","A tests and B tests"], a:1, e:"Discover → Define → Develop → Deliver."},
+    {t:'M', q:"What is the \"Crazy 8s\" exercise?", o:["Testing 8 versions of a page in A/B","Sketching 8 ideas in 8 minutes","Interviewing 8 users","Building an 8-column grid"], a:1, e:"Fast ideation without self-censoring, from the Design Sprint."},
+    {t:'M', q:"How many days does a classic Design Sprint (Google Ventures) last?", o:["1 day","5 days","2 weeks","1 month"], a:1, e:"Map, sketch, decide, prototype, test."},
+    {t:'M', q:"What is an MVP?", o:["Most Valuable Player","Minimum Viable Product: the smallest version that lets you learn from the market","Maximum Visual Prototype","A pixel-perfect mockup"], a:1, e:"A Lean Startup concept for testing hypotheses fast."},
+    {t:'M', q:"In Scrum, who is responsible for prioritizing the product backlog?", o:["The Scrum Master","The UX designer","The Product Owner","The end customer"], a:2, e:"The Scrum Master facilitates; the Product Owner orders the backlog."},
+    {t:'M', q:"In Brad Frost's Atomic Design, what is the order of the levels?", o:["Pages → Templates → Organisms → Molecules → Atoms","Atoms → Molecules → Organisms → Templates → Pages","Atoms → Organisms → Molecules → Pages → Templates","Molecules → Atoms → Templates → Organisms → Pages"], a:1, e:"From the smallest components up to full pages: the basis of design systems."},
+    {t:'W', q:"Which tool is known for quick, low-fidelity wireframes with a hand-drawn look?", o:["Balsamiq","Photoshop","After Effects","Blender"], a:0, e:"Its sketchy style keeps the discussion on structure."},
+    {t:'W', q:"What does \"above the fold\" mean?", o:["The footer of a page","The navigation menu","The part of the page visible without scrolling","A pop-up window"], a:2, e:"The term comes from the top half of a newspaper's front page."},
+    {t:'W', q:"What is a 12-column grid mainly used for?", o:["Storing data","Laying out content consistently and responsively","Choosing fonts","Testing performance"], a:1, e:"12 divides by 2, 3, 4 and 6, which makes it very flexible."},
+    {t:'W', q:"What is a sitemap in UX?", o:["A Google Maps page","A list of bugs","A color palette","A hierarchical diagram of a site's pages"], a:3, e:"It defines the structure before wireframing individual pages."},
+    {t:'W', q:"Which of these is usually NOT included in a wireframe?", o:["Navigation","Final brand colors and photos","Content blocks","Buttons"], a:1, e:"Visual identity comes at the mockup stage."},
+    {t:'W', q:"What is the purpose of annotations on a wireframe?", o:["To explain behavior and functionality","To decorate the page","To add a signature","To translate the content"], a:0, e:"For example: \"This button opens a modal\"."},
+    {t:'W', q:"In responsive design, what is a \"breakpoint\"?", o:["A bug in the code","A pause during user testing","A screen width at which the layout changes","A broken link"], a:2, e:"Common breakpoints are mobile, tablet and desktop widths."},
+    {t:'U', q:"According to Miller's law, how many items can the average person hold in working memory?", o:["2 ± 1","7 ± 2","15 ± 5","50"], a:1, e:"That's why we group information into chunks."},
+    {t:'U', q:"Which Gestalt principle says that elements that look alike are perceived as related?", o:["Proximity","Closure","Figure-ground","Similarity"], a:3, e:"Same color, shape or size suggests the same function."},
+    {t:'U', q:"What is a \"dark pattern\"?", o:["A dark mode theme","A design trick that pushes users into actions they didn't intend","A background texture","A security feature"], a:1, e:"Examples: hidden costs, pre-checked boxes, hard-to-find unsubscribe links."},
+    {t:'U', q:"What is an \"affordance\"?", o:["A property that suggests how an object should be used","The cost of a design project","A type of font","A loading animation"], a:0, e:"A raised button invites a click."},
+    {t:'U', q:"What does the Von Restorff (isolation) effect state?", o:["Users forget the first item in a list","Users prefer dark colors","The item that stands out from the others is the one most remembered","Long pages perform better"], a:2, e:"That's why the main call-to-action gets a distinct color."},
+    {t:'U', q:"What is Apple's recommended minimum touch target size?", o:["10 × 10 pt","20 × 20 pt","44 × 44 pt","100 × 100 pt"], a:2, e:"Google's Material Design recommends 48 × 48 dp."},
+    {t:'U', q:"What does the peak-end rule say?", o:["People judge an experience by its most intense moment and its end","Users leave at the peak of traffic","The end of a page is never read","Peaks in data must be removed"], a:0, e:"Take care of the final step, such as the confirmation or thank-you page."},
+    {t:'R', q:"What is A/B testing?", o:["Testing with users A to B in alphabetical order","Comparing two versions with real users to see which performs better","Testing accessibility levels A and AA","A test done in two languages"], a:1, e:"It's quantitative and needs enough traffic."},
+    {t:'R', q:"Which of these is a quantitative method?", o:["In-depth interview","Contextual inquiry","Analytics on 10,000 sessions","Think-aloud test with 5 users"], a:2, e:"Quantitative methods show what happens; qualitative methods explain why."},
+    {t:'R', q:"What is a customer journey map?", o:["A map of the company's offices","A visualization of the user's experience across all touchpoints over time","A delivery route","A sitemap"], a:1, e:"It shows actions, emotions and pain points at each step."},
+    {t:'R', q:"What are the four classic quadrants of an empathy map?", o:["Who, What, Where, When","Plan, Do, Check, Act","Strengths, Weaknesses, Opportunities, Threats","Says, Thinks, Does, Feels"], a:3, e:"Strengths, Weaknesses, Opportunities, Threats is a SWOT analysis — a classic trap!"},
+    {t:'R', q:"In the think-aloud protocol, participants…", o:["say their thoughts out loud while performing tasks","read the instructions out loud","give a presentation to the team","stay silent during the test"], a:0, e:"It reveals hesitations and misunderstandings in real time."},
+    {t:'R', q:"What is the SUS (System Usability Scale)?", o:["A screen-size standard","A coding framework","A 10-question questionnaire that gives a usability score from 0 to 100","A color contrast tool"], a:2, e:"A score of about 68 is considered average."},
+    {t:'M', q:"What is the classic format of a user story?", o:["\"The system shall…\"","\"As a [user], I want [goal] so that [benefit]\"","\"Once upon a time…\"","\"If X then Y\""], a:1, e:"It focuses on the user's need, not the technical solution."},
+    {t:'M', q:"What does the MoSCoW method stand for?", o:["Must have, Should have, Could have, Won't have","Mobile, Social, Cloud, Web","Model, Story, Code, Workflow","A sprint held in Moscow"], a:0, e:"It's a prioritization technique for features."},
+    {t:'M', q:"What is the core idea of Kanban?", o:["Working in fixed 2-week sprints","Writing complete documentation first","Visualizing the workflow on a board and limiting work in progress","Daily meetings of 1 hour"], a:2, e:"Typical columns are To do, In progress and Done."},
+    {t:'M', q:"What are \"How Might We…?\" questions used for?", o:["Writing legal terms","Estimating a budget","Recruiting test users","Reframing problems as opportunities during ideation"], a:3, e:"For example: \"How might we make checkout faster?\""},
+    {t:'M', q:"What is the Lean feedback loop?", o:["Plan → Design → Ship","Build → Measure → Learn","Think → Wait → Decide","Code → Test → Deploy"], a:1, e:"From Eric Ries's Lean Startup, it's also at the heart of Lean UX."}
+  ];
+
+  /* Theme names and header colors (white text on each is ≥ 4.5:1). */
+  const THEMES = {
+    W: { name: 'Wireframes',    color: '#1d4ed8' },
+    U: { name: 'UX principles', color: '#6d28d9' },
+    R: { name: 'User research', color: '#0f766e' },
+    M: { name: 'Methodologies', color: '#9a3412' }
+  };
+
+  /* ------------------------------------------------------------------------
+     BOARD
+     ------------------------------------------------------------------------ */
+  const START = 0;    // "LEAVE"
+  const FINISH = 33;  // "FINISH", right after square 32
+  const MAX_CHAIN = 10; // loop protection for chained special squares
+
+  /*
+     Special squares — edit freely.
+     action.kind:
+       'move' → move by `by` squares (negative = backwards)
+       'goto' → jump to square `to`
+       'skip' → the player skips their next `turns` turns
+       'rest' → safe square, nothing happens
+     `message` placeholders: {name}, {to}, {turns}
+     type / icon / name / tag are only used for display.
+  */
+  const SPECIAL_CELLS = {
+    8:  { type: 'bonus',   icon: 'icons/bonus.svg',  name: 'Bonus',   tag: '+3',     action: { kind: 'move', by: 3 },    message: 'Bonus! {name} moves ahead 3 squares to square {to}.' },
+    21: { type: 'bonus',   icon: 'icons/bonus.svg',  name: 'Bonus',   tag: '+3',     action: { kind: 'move', by: 3 },    message: 'Bonus! {name} moves ahead 3 squares to square {to}.' },
+    24: { type: 'bridge',  icon: 'icons/bridge.svg', name: 'Bridge',  tag: '→28',    action: { kind: 'goto', to: 28 },   message: '{name} crosses the bridge straight to square {to}!' },
+    12: { type: 'shark',   icon: 'icons/shark.svg', name: 'Shark',   tag: '−3',     action: { kind: 'move', by: -3 },   message: 'A shark! {name} swims back 3 squares to square {to}.' },
+    26: { type: 'typhoon', icon: 'icons/typhoon.svg', name: 'Typhoon', tag: 'skip 2', action: { kind: 'skip', turns: 2 }, message: 'Typhoon! {name} will skip the next {turns} turns.' },
+    29: { type: 'boat',    icon: 'icons/boat.svg', name: 'Boat',    tag: '→5',     action: { kind: 'goto', to: 5 },    message: 'All aboard! The boat takes {name} back to square {to}.' },
+    16: { type: 'rest',    icon: 'icons/rest.svg', name: 'Rest',    tag: 'safe',   action: { kind: 'rest' },           message: '{name} takes a nap on a safe square. Nothing happens.' },
+    27: { type: 'rest',    icon: 'icons/rest.svg', name: 'Rest',    tag: 'safe',   action: { kind: 'rest' },           message: '{name} takes a nap on a safe square. Nothing happens.' }
+  };
+
+  /* ------------------------------------------------------------------------
+     Small helpers
+     ------------------------------------------------------------------------ */
+  const clone = (obj) => JSON.parse(JSON.stringify(obj));
+  const clampPos = (p) => Math.max(START, Math.min(FINISH, p));
+  const isSpecial = (pos, specials = SPECIAL_CELLS) =>
+    Object.prototype.hasOwnProperty.call(specials, pos);
+
+  /** Fisher–Yates shuffle; returns a new array. `rng` returns [0, 1). */
+  function shuffle(arr, rng = Math.random) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  /* ------------------------------------------------------------------------
+     Movement
+     ------------------------------------------------------------------------ */
+
+  /**
+   * Square-by-square path for a roll, with the "exact finish" bounce rule:
+   * the pawn walks up to FINISH, then walks back the extra squares.
+   * @returns {{path:number[], landing:number, bounced:boolean}}
+   */
+  function computeMove(from, roll) {
+    const path = [];
+    let pos = from;
+    let dir = 1;
+    let bounced = false;
+    for (let i = 0; i < roll; i++) {
+      if (pos === FINISH) { dir = -1; bounced = true; }
+      pos = clampPos(pos + dir);
+      path.push(pos);
+    }
+    return { path, landing: pos, bounced };
+  }
+
+  /**
+   * Applies the special square the pawn landed on, then chains any further
+   * special squares it is sent to (e.g. 21 → 24 → 28).
+   * A question is asked only if the pawn landed on a plain square without
+   * any special effect happening first.
+   * Loop protection: a square can't trigger twice in one chain, and a chain
+   * is capped at MAX_CHAIN effects.
+   */
+  function resolveLanding(pos, specials = SPECIAL_CELLS) {
+    const effects = [];
+    const seen = new Set();
+    let current = pos;
+    let skipTurns = 0;
+    let loopGuard = false;
+
+    while (current !== FINISH && isSpecial(current, specials)) {
+      if (seen.has(current) || effects.length >= MAX_CHAIN) { loopGuard = true; break; }
+      seen.add(current);
+
+      const action = specials[current].action;
+      let to = current;
+      if (action.kind === 'move') to = clampPos(current + action.by);
+      else if (action.kind === 'goto') to = clampPos(action.to);
+      else if (action.kind === 'skip') skipTurns += action.turns;
+      // 'rest' does nothing
+
+      effects.push({ cell: current, kind: action.kind, from: current, to, turns: action.turns || 0 });
+      if (to === current) break; // rest / skip: the pawn stays, the chain ends
+      current = to;
+    }
+
+    const finished = current === FINISH;
+    return {
+      finalPos: current,
+      effects,
+      skipTurns,
+      finished,
+      needsQuestion: !finished && effects.length === 0,
+      loopGuard
+    };
+  }
+
+  /* ------------------------------------------------------------------------
+     Question deck: shuffled draw pile + discard pile
+     ------------------------------------------------------------------------ */
+  function createDeck(size, rng = Math.random) {
+    return { draw: shuffle([...Array(size).keys()], rng), discard: [], last: null };
+  }
+
+  /**
+   * Draws the top card. When the draw pile is empty, the discard pile is
+   * reshuffled, so no question comes back before all the others came out.
+   * (We also avoid drawing the very last card again right after a reshuffle.)
+   */
+  function drawCard(deck, rng = Math.random) {
+    let draw = deck.draw.slice();
+    let discard = deck.discard.slice();
+    let reshuffled = false;
+    if (draw.length === 0) {
+      draw = shuffle(discard, rng);
+      discard = [];
+      reshuffled = true;
+      if (draw.length > 1 && draw[0] === deck.last) {
+        const j = 1 + Math.floor(rng() * (draw.length - 1));
+        [draw[0], draw[j]] = [draw[j], draw[0]];
+      }
+    }
+    const id = draw.shift();
+    discard.push(id);
+    return { id, deck: { draw, discard, last: id }, reshuffled };
+  }
+
+  /* ------------------------------------------------------------------------
+     Game state machine
+     phase: 'roll' → (question) → 'turnEnd' → advanceTurn → 'roll' … → 'over'
+     ------------------------------------------------------------------------ */
+
+  /** @param players [{name, color}] in play order (1 to 6). */
+  function createGame(players, opts = {}) {
+    const rng = opts.rng || Math.random;
+    if (!Array.isArray(players) || players.length < 1 || players.length > 6) {
+      throw new Error('A game needs 1 to 6 players.');
+    }
+    return {
+      players: players.map((p) => ({
+        name: p.name, color: p.color, pos: START, correct: 0, answered: 0, skip: 0
+      })),
+      current: 0,
+      phase: 'roll',
+      deck: createDeck(opts.deckSize || QUESTIONS.length, rng),
+      pending: null,   // pending question: { questionId, start, landing }
+      winner: null,
+      turn: 1
+    };
+  }
+
+  /**
+   * Current player rolls `roll`. Returns the new state plus everything the
+   * UI needs to animate: path, bounce, chained effects, question to ask.
+   */
+  function playRoll(state, roll, rng = Math.random) {
+    if (state.phase !== 'roll') throw new Error('Cannot roll now (phase: ' + state.phase + ').');
+    if (!Number.isInteger(roll) || roll < 1 || roll > 6) throw new Error('Invalid roll: ' + roll);
+
+    const s = clone(state);
+    const player = s.players[s.current];
+    const start = player.pos;
+    const move = computeMove(start, roll);
+    const res = resolveLanding(move.landing);
+
+    player.pos = res.finalPos;
+    if (res.skipTurns > 0) player.skip = res.skipTurns;
+
+    let questionId = null;
+    if (res.finished) {
+      s.phase = 'over';
+      s.winner = s.current;
+    } else if (res.needsQuestion) {
+      const drawn = drawCard(s.deck, rng);
+      s.deck = drawn.deck;
+      questionId = drawn.id;
+      s.phase = 'question';
+      s.pending = { questionId, start, landing: res.finalPos };
+    } else {
+      s.phase = 'turnEnd';
+    }
+
+    return {
+      state: s,
+      roll,
+      start,
+      path: move.path,
+      landing: move.landing,
+      bounced: move.bounced,
+      effects: res.effects,
+      finalPos: res.finalPos,
+      finished: res.finished,
+      loopGuard: res.loopGuard,
+      questionId
+    };
+  }
+
+  /**
+   * Right answer: stay on the square. Wrong answer: back to the square where
+   * the turn started. Going back never re-triggers a special square.
+   */
+  function answerQuestion(state, isCorrect) {
+    if (state.phase !== 'question' || !state.pending) throw new Error('No question pending.');
+    const s = clone(state);
+    const player = s.players[s.current];
+    player.answered += 1;
+    if (isCorrect) {
+      player.correct += 1;
+      player.pos = s.pending.landing;
+    } else {
+      player.pos = s.pending.start;
+    }
+    s.pending = null;
+    s.phase = 'turnEnd';
+    return s;
+  }
+
+  /**
+   * Passes to the next player, applying typhoon skips. Returns the new state
+   * and the list of skipped turns (in order) so the UI can announce them.
+   */
+  function advanceTurn(state) {
+    if (state.phase !== 'turnEnd') throw new Error('Turn is not over (phase: ' + state.phase + ').');
+    const s = clone(state);
+    const n = s.players.length;
+    const skipped = [];
+    // Each skip decrements a counter, so this always ends; the cap is a safety net.
+    const maxIterations = n * 50;
+    let guard = 0;
+    s.current = (s.current + 1) % n;
+    while (s.players[s.current].skip > 0 && guard++ < maxIterations) {
+      const p = s.players[s.current];
+      p.skip -= 1;
+      skipped.push({ player: s.current, remaining: p.skip });
+      s.current = (s.current + 1) % n;
+    }
+    s.turn += 1;
+    s.phase = 'roll';
+    return { state: s, skipped };
+  }
+
+  /** Ranking: furthest square first, then most correct answers. */
+  function ranking(state) {
+    return state.players
+      .map((p, index) => Object.assign({ index }, p))
+      .sort((a, b) => (b.pos - a.pos) || (b.correct - a.correct) || (a.index - b.index));
+  }
+
+  const api = {
+    QUESTIONS, THEMES, SPECIAL_CELLS, START, FINISH, MAX_CHAIN,
+    shuffle, isSpecial, computeMove, resolveLanding,
+    createDeck, drawCard,
+    createGame, playRoll, answerQuestion, advanceTurn, ranking
+  };
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.GooseLogic = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+</script>
+
+<!-- ==========================================================================
+     UI / RENDERING + ONLINE PLAY
+     The server (server.js) runs the rules from the game-logic block above and
+     is the only one to change a game. This script logs in, polls the room,
+     and replays the server's events (rolls, answers, skips) as animations.
+     ========================================================================== -->
+<script>
+(function () {
+  'use strict';
+  const L = window.GooseLogic;
+  const { QUESTIONS, THEMES, SPECIAL_CELLS, START, FINISH } = L;
+
+  /* ---------------- Constants ---------------- */
+  const PLAYER_COLORS = [
+    { name: 'Red',    hex: '#dc2626', ink: '#ffffff' },
+    { name: 'Blue',   hex: '#2563eb', ink: '#ffffff' },
+    { name: 'Green',  hex: '#15803d', ink: '#ffffff' },
+    { name: 'Yellow', hex: '#facc15', ink: '#1f2937' },
+    { name: 'Purple', hex: '#7c3aed', ink: '#ffffff' },
+    { name: 'Orange', hex: '#f97316', ink: '#1f2937' }
+  ];
+  const BOARD_COLS = 8;
+  const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const T = {
+    step: REDUCED ? 60 : 260,     // per square
+    roll: REDUCED ? 150 : 750,    // die animation
+    effect: REDUCED ? 150 : 650,  // pause around special effects
+    skip: REDUCED ? 400 : 1100    // pause on each skipped turn
+  };
+  const POLL_MS = 1000;           // how often we ask the server for news
+  const POLL_HIDDEN_MS = 4000;    // …when the tab is in the background
+  const SPECTATOR_CONTINUE_MS = 12000; // others' answers close by themselves
+  const LETTERS = ['A', 'B', 'C', 'D'];
+  const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const SKIP_ICON = (Object.values(SPECIAL_CELLS).find((s) => s.action.kind === 'skip') || {}).icon || 'icons/typhoon.svg';
+  const ABORT = Symbol('abort');
+  const SCREENS = ['boot-screen', 'auth-screen', 'lobby-screen', 'room-screen', 'game-screen'];
+
+  /* ---------------- DOM helpers ---------------- */
+  const $ = (id) => document.getElementById(id);
+  function el(tag, props = {}, children = []) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === 'class') node.className = v;
+      else if (k === 'text') node.textContent = v;
+      else if (k === 'style') Object.assign(node.style, v);
+      else if (k.startsWith('aria-') || k === 'role' || k.startsWith('data-')) node.setAttribute(k, v);
+      else node[k] = v;
+    }
+    for (const c of [].concat(children)) if (c != null) node.append(c);
+    return node;
+  }
+  const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  /* ---------------- State ---------------- */
+  let me = null;     // { id, username }
+  let room = null;   // { code, hostId, status, seats:[{seat, userId, username, left}] }
+  let game = null;   // public game state, as currently *shown*
+  const net = {
+    seq: -1,         // last server event we have queued
+    queue: [],       // events waiting to be animated
+    processing: false,
+    acting: false,   // a roll/answer/start request is on its way
+    pollTimer: null,
+    offline: false
+  };
+  const ui = {
+    token: 0,        // changes on re-sync / leaving → aborts running animations
+    displayPos: [],  // where pawns are *drawn* (may lag behind the state)
+    hop: null,
+    question: null,  // { id, order, mine, sending, shown }
+    continueResolve: null,
+    cells: [],
+    lastFocus: null,
+    leaveTimer: null,
+    authMode: 'login'
+  };
+
+  async function wait(ms, token) {
+    await delay(ms);
+    if (token !== ui.token) throw ABORT;
+  }
+
+  const squareName = (pos) => pos === START ? 'LEAVE' : pos === FINISH ? 'FINISH' : 'square ' + pos;
+  const fill = (tpl, vars) => tpl.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? vars[k] : ''));
+  const colorOf = (i) => PLAYER_COLORS[i % PLAYER_COLORS.length];
+  const seatUser = (i) => (room && room.seats[i]) || {};
+  const isMe = (i) => !!me && seatUser(i).userId === me.id;
+  const nameOf = (i) => (game && game.players[i] ? game.players[i].name : seatUser(i).username || 'Player ' + (i + 1));
+  const isHost = () => !!(room && me && room.hostId === me.id);
+
+  function makePawn(i, extraClass = '') {
+    const c = colorOf(i);
+    return el('span', {
+      class: 'pawn ' + extraClass,
+      text: String(i + 1),
+      style: { background: c.hex, color: c.ink },
+      'aria-hidden': 'true'
+    });
+  }
+
+  function showScreen(id) {
+    for (const s of SCREENS) $(s).hidden = s !== id;
+    $('user-box').hidden = !me;
+    if (me) $('user-name').textContent = '👤 ' + me.username;
+  }
+  function showError(id, message) {
+    $(id).textContent = message || '';
+    $(id).hidden = !message;
+  }
+
+  /* =================================================================
+     SERVER
+     ================================================================= */
+  async function api(method, url, body) {
+    const opts = { method, headers: {}, credentials: 'same-origin' };
+    if (body !== undefined) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    let res;
+    try { res = await fetch(url, opts); }
+    catch { const e = new Error('Cannot reach the server. Check your connection.'); e.network = true; throw e; }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const e = new Error(data.error || 'Server error (' + res.status + ').');
+      e.status = res.status;
+      throw e;
+    }
+    return data;
+  }
+  const roomUrl = (action) => '/api/rooms/' + encodeURIComponent(room.code) + (action ? '/' + action : '');
+
+  /** Sends an action for the current room and feeds the answer in. */
+  async function roomAction(action, extra = {}) {
+    if (!room || net.acting) return false;
+    net.acting = true;
+    updateControls();
+    try {
+      ingest(await api('POST', roomUrl(action), Object.assign({ since: net.seq }, extra)));
+      return true;
+    } catch (err) {
+      if (err.status === 401) { onLoggedOut(); return false; }
+      toast(err.message, 'bad');
+      return false;
+    } finally {
+      net.acting = false;
+      updateControls();
+    }
+  }
+
+  /* ---------------- Polling ---------------- */
+  function startPolling() {
+    stopPolling();
+    const tick = async () => {
+      if (!room) return;
+      const code = room.code;
+      try {
+        const data = await api('GET', roomUrl() + '?since=' + net.seq);
+        if (!room || room.code !== code) return;
+        if (net.offline) { net.offline = false; toast('Connected again.', 'good'); }
+        ingest(data);
+      } catch (err) {
+        if (!room || room.code !== code) return;
+        if (err.status === 401) return onLoggedOut();
+        if (err.status === 403 || err.status === 404) return backToLobby('This game is no longer available.');
+        if (!net.offline) { net.offline = true; toast('Connection lost. Retrying…', 'bad'); }
+      }
+      if (room && room.code === code) net.pollTimer = setTimeout(tick, document.hidden ? POLL_HIDDEN_MS : POLL_MS);
+    };
+    net.pollTimer = setTimeout(tick, POLL_MS);
+  }
+  function stopPolling() { clearTimeout(net.pollTimer); net.pollTimer = null; }
+
+  /* ---------------- Incoming room data ---------------- */
+  function ingest(data) {
+    if (!data || data.unchanged) return;
+    if (data.closed) return backToLobby();
+    const v = data.room;
+    if (!v) return;
+    if (v.resync || net.seq < 0) return applySnapshot(v);
+    if (v.seq < net.seq) return; // an older answer arriving late
+    room = { code: v.code, hostId: v.hostId, status: v.status, seats: v.seats };
+    const fresh = v.events.filter((e) => e.seq > net.seq);
+    net.seq = v.seq;
+    net.queue.push(...fresh);
+    if (!$('room-screen').hidden) renderRoom();
+    if (!$('end-modal').hidden) renderEndButtons();
+    pump();
+  }
+
+  /** Shows the room exactly as the server has it, without animations. */
+  function applySnapshot(v) {
+    ui.token++;
+    net.queue = [];
+    net.processing = false;
+    ui.question = null;
+    closeModal($('question-modal'));
+    closeModal($('end-modal'));
+    room = { code: v.code, hostId: v.hostId, status: v.status, seats: v.seats };
+    net.seq = v.seq;
+    game = v.game;
+    localStorage.setItem('goose.room', v.code);
+
+    if (v.status === 'lobby' || !game) {
+      showScreen('room-screen');
+      renderRoom();
+      return;
+    }
+    showGameScreen();
+    ui.displayPos = game.players.map((p) => p.pos);
+    $('history').textContent = '';
+    log('You are in game ' + v.code + '.');
+    setTurnText();
+    renderAll();
+    if (v.status === 'over') showEnd();
+    else if (game.phase === 'question' && game.pending) openQuestion(game.pending.questionId);
+  }
+
+  /** Animates the queued events one after the other. */
+  async function pump() {
+    if (net.processing) return;
+    net.processing = true;
+    const token = ui.token;
+    updateControls();
+    try {
+      while (net.queue.length && token === ui.token) await playEvent(net.queue.shift(), token);
+    } catch (err) {
+      if (err !== ABORT) console.error(err);
+    } finally {
+      if (token === ui.token) { net.processing = false; updateControls(); }
+    }
+  }
+
+  async function playEvent(ev, token) {
+    if (ev.type === 'lobby') {
+      if (ev.text && !/created the room/.test(ev.text)) toast(ev.text, 'info');
+      if (game && !$('game-screen').hidden && ev.text) log(ev.text);
+      return;
+    }
+    if (ev.type === 'start') return enterGame(ev);
+    if (!game) return; // game events need a game on screen; a re-sync will fix it
+    if (ev.type === 'roll') return playRollEvent(ev, token);
+    if (ev.type === 'answer') return playAnswerEvent(ev, token);
+    if (ev.type === 'leave') {
+      toast(ev.text, 'info');
+      log(ev.text, ev.player);
+      if (ui.question && game.current === ev.player) { ui.question = null; closeModal($('question-modal')); }
+      await announceSkips(ev.skipped, ev.state, token);
+      game = ev.state;
+      ui.displayPos = game.players.map((p) => p.pos);
+      setTurnText();
+      renderAll();
+    }
+  }
+
+  /* =================================================================
+     ACCOUNT SCREEN
+     ================================================================= */
+  function setAuthMode(mode) {
+    ui.authMode = mode;
+    const reg = mode === 'register';
+    $('tab-login').setAttribute('aria-pressed', String(!reg));
+    $('tab-register').setAttribute('aria-pressed', String(reg));
+    $('auth-title').textContent = reg ? 'Create an account' : 'Log in';
+    $('auth-submit').textContent = reg ? 'Create my account' : 'Log in';
+    $('auth-password').autocomplete = reg ? 'new-password' : 'current-password';
+    $('username-hint').hidden = !reg;
+    $('password-hint').hidden = !reg;
+    showError('auth-error', '');
+  }
+
+  async function submitAuth(e) {
+    e.preventDefault();
+    const username = $('auth-username').value.trim();
+    const password = $('auth-password').value;
+    if (!username || !password) return showError('auth-error', 'Please type a username and a password.');
+    const btn = $('auth-submit');
+    btn.disabled = true;
+    try {
+      const data = await api('POST', ui.authMode === 'register' ? '/api/register' : '/api/login', { username, password });
+      me = data.user;
+      $('auth-password').value = '';
+      showError('auth-error', '');
+      await afterLogin(null);
+    } catch (err) {
+      showError('auth-error', err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function logout() {
+    stopPolling();
+    try { await api('POST', '/api/logout', {}); } catch { /* we log out locally anyway */ }
+    onLoggedOut();
+  }
+  function onLoggedOut() {
+    stopPolling();
+    ui.token++;
+    me = null; room = null; game = null; net.seq = -1; net.queue = []; net.processing = false;
+    closeModal($('question-modal'));
+    closeModal($('end-modal'));
+    showScreen('auth-screen');
+    setAuthMode('login');
+    $('auth-username').focus();
+  }
+
+  /** After login (or on page load): resume the game we were in, else show the lobby. */
+  async function afterLogin(serverRoomCode) {
+    const code = serverRoomCode || localStorage.getItem('goose.room');
+    if (code) {
+      try {
+        room = { code };
+        net.seq = -1;
+        ingest(await api('GET', '/api/rooms/' + encodeURIComponent(code) + '?since=-1'));
+        startPolling();
+        return;
+      } catch { room = null; localStorage.removeItem('goose.room'); }
+    }
+    showLobby();
+  }
+
+  /* =================================================================
+     LOBBY: create or join a game
+     ================================================================= */
+  function showLobby() {
+    showScreen('lobby-screen');
+    showError('lobby-error', '');
+    $('create-btn').focus();
+  }
+
+  /** Same rule as the server: uppercase, no spaces/dashes, 6 allowed characters. */
+  function cleanCode(text) {
+    const code = String(text || '').toUpperCase().replace(/[\s-]/g, '');
+    return code.length === 6 && [...code].every((c) => CODE_ALPHABET.includes(c)) ? code : null;
+  }
+
+  async function enterRoom(request) {
+    showError('lobby-error', '');
+    $('create-btn').disabled = $('join-btn').disabled = true;
+    try {
+      const data = await request();
+      net.seq = -1;
+      ingest(data);
+      startPolling();
+    } catch (err) {
+      if (err.status === 401) return onLoggedOut();
+      showError('lobby-error', err.message);
+    } finally {
+      $('create-btn').disabled = $('join-btn').disabled = false;
+    }
+  }
+
+  function submitJoin(e) {
+    e.preventDefault();
+    const code = cleanCode($('join-code').value);
+    if (!code) return showError('lobby-error', 'A game code has 6 letters and digits, for example K7P2XM.');
+    enterRoom(() => api('POST', '/api/rooms/' + code + '/join', {}));
+  }
+
+  /** Leaves the room on the server (if asked) and goes back to the lobby. */
+  async function leaveRoom() {
+    if (room) {
+      const ok = await roomAction('leave');
+      if (!ok && room) return; // keep the player where they are if it failed
+    }
+    backToLobby();
+  }
+  function backToLobby(message) {
+    stopPolling();
+    ui.token++;
+    room = null; game = null; net.seq = -1; net.queue = []; net.processing = false; ui.question = null;
+    localStorage.removeItem('goose.room');
+    closeModal($('question-modal'));
+    closeModal($('end-modal'));
+    resetLeaveButton();
+    if (!me) return onLoggedOut();
+    showLobby();
+    if (message) showError('lobby-error', message);
+  }
+
+  /* =================================================================
+     WAITING ROOM
+     ================================================================= */
+  function renderRoom() {
+    if (!room) return;
+    $('room-code').textContent = room.code;
+    const seats = room.seats.filter((s) => !s.left);
+    $('room-count').textContent = `(${seats.length}/6)`;
+    const ul = $('room-players');
+    ul.textContent = '';
+    seats.forEach((s, i) => {
+      const tags = [];
+      if (s.userId === room.hostId) tags.push('host');
+      if (me && s.userId === me.id) tags.push('you');
+      ul.append(el('li', {}, [
+        makePawn(i, 'pawn--md'),
+        el('span', { class: 'p-name', text: s.username }),
+        el('div', { class: 'p-stats' }, [el('span', { text: tags.length ? tags.join(' · ') : colorOf(i).name + ' pawn' })])
+      ]));
+    });
+    const host = isHost();
+    $('room-start-btn').hidden = !host;
+    $('room-start-btn').disabled = net.acting;
+    const hostName = (room.seats.find((s) => s.userId === room.hostId) || {}).username || 'the host';
+    $('room-status').textContent = host
+      ? (seats.length < 2 ? 'Waiting for players… You can also start alone.' : 'Everyone is here? Start the game!')
+      : `Waiting for ${hostName} to start the game…`;
+  }
+
+  async function copyCode() {
+    if (!room) return;
+    try {
+      await navigator.clipboard.writeText(room.code);
+      toast('Code copied: ' + room.code, 'good');
+    } catch {
+      toast('Copy failed: the code is ' + room.code, 'info');
+    }
+  }
+
+  /* =================================================================
+     GAME START (from a server "start" event)
+     ================================================================= */
+  function showGameScreen() {
+    showScreen('game-screen');
+    $('game-code').textContent = room ? room.code : '';
+    if (!ui.cells.length) buildBoard();
+    drawRoad();
+  }
+
+  function enterGame(ev) {
+    ui.question = null;
+    closeModal($('question-modal'));
+    closeModal($('end-modal'));
+    game = ev.state;
+    ui.displayPos = game.players.map(() => START);
+    ui.hop = null;
+    $('history').textContent = '';
+    $('toast-zone').textContent = '';
+    setDieFace(1);
+    resetLeaveButton();
+    showGameScreen();
+    log(ev.text || 'Game started!');
+    setTurnText();
+    renderAll();
+    if (isMe(game.current)) $('roll-btn').focus();
+  }
+
+  /* =================================================================
+     BOARD RENDERING
+     Layout: 4 lanes of 8 squares, joined by single "turn" squares. Lanes
+     alternate direction, like a snake. With 34 positions this puts 24 right
+     above 28, so the bridge crosses the gap between those two lanes.
+     ================================================================= */
+  function gridPos(p) {
+    const W = BOARD_COLS;
+    const lane = Math.floor(p / (W + 1));
+    const k = p % (W + 1);
+    const forward = lane % 2 === 0;
+    if (k === W) return { row: lane * 2 + 1, col: forward ? W - 1 : 0, connector: true };
+    return { row: lane * 2, col: forward ? k : W - 1 - k, connector: false };
+  }
+
+  function cellInfo(p) {
+    if (p === START) return { type: 'start', label: 'LEAVE: the starting square' };
+    if (p === FINISH) return { type: 'finish', label: 'FINISH: land here exactly to win' };
+    const sp = SPECIAL_CELLS[p];
+    if (sp) return { type: sp.type, special: sp, label: `Square ${p}, ${sp.name}: ${describeSpecial(sp)}` };
+    return { type: 'question', label: `Square ${p}, question square` };
+  }
+
+  function describeSpecial(sp) {
+    const a = sp.action;
+    if (a.kind === 'move') return a.by > 0 ? `move ahead ${a.by} squares` : `move back ${-a.by} squares`;
+    if (a.kind === 'goto') return `go to square ${a.to}`;
+    if (a.kind === 'skip') return `skip the next ${a.turns} turns`;
+    return 'safe square, nothing happens';
+  }
+
+  function iconNode(sp) {
+    return el('img', { class: 'cell-img', src: sp.icon, alt: '', draggable: false });
+  }
+
+  function buildBoard() {
+    const board = $('board');
+    board.textContent = '';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'road';
+    svg.setAttribute('aria-hidden', 'true');
+    board.append(svg);
+
+    ui.cells = [];
+    for (let p = START; p <= FINISH; p++) {
+      const g = gridPos(p);
+      const info = cellInfo(p);
+      const cell = el('div', { class: `cell cell--${info.type}` + (info.special ? ' cell--special' : ''), role: 'listitem' });
+      cell.style.gridRow = String(g.row + 1);
+      cell.style.gridColumn = String(g.col + 1);
+      cell.dataset.label = info.label;
+
+      if (p === START) {
+        cell.append(el('span', { class: 'cell-icon', text: '🚩', 'aria-hidden': 'true' }), el('span', { class: 'cell-label', text: 'LEAVE', 'aria-hidden': 'true' }));
+      } else if (p === FINISH) {
+        // FINISH fills the free square next to it at the end of the last lane.
+        const before = gridPos(FINISH - 1);
+        if (g.row === before.row && g.col === 1 && before.col === 2) cell.style.gridColumn = '1 / span 2';
+        cell.append(el('span', { class: 'cell-icon', text: '🏁', 'aria-hidden': 'true' }), el('span', { class: 'cell-label', text: 'FINISH', 'aria-hidden': 'true' }));
+      } else {
+        cell.append(el('span', { class: 'cell-num', text: String(p), 'aria-hidden': 'true' }));
+        if (info.special) {
+          cell.append(el('span', { class: 'cell-icon', 'aria-hidden': 'true' }, [iconNode(info.special)]));
+          cell.append(el('span', { class: 'cell-tag', text: info.special.tag, 'aria-hidden': 'true' }));
+        } else {
+          cell.append(el('span', { class: 'cell-icon', text: '?', 'aria-hidden': 'true' }));
+        }
+      }
+      cell.append(el('div', { class: 'pawns' }));
+      ui.cells.push(cell);
+      board.append(cell);
+    }
+
+    // Draw a bridge for every forward 'goto' whose two ends sit one gap apart.
+    for (const [from, sp] of Object.entries(SPECIAL_CELLS)) {
+      if (sp.type !== 'bridge') continue;
+      const a = gridPos(Number(from)), b = gridPos(sp.action.to);
+      if (a.col === b.col && Math.abs(a.row - b.row) === 2) {
+        const bridge = el('div', { class: 'bridge', 'aria-hidden': 'true' }, [el('span', {}, [iconNode(sp)])]);
+        bridge.style.gridColumn = String(a.col + 1);
+        bridge.style.gridRow = String(Math.min(a.row, b.row) + 2);
+        board.append(bridge);
+      }
+    }
+
+    if ('ResizeObserver' in window) new ResizeObserver(drawRoad).observe(board);
+    else window.addEventListener('resize', drawRoad);
+    renderLegend();
+  }
+
+  /** Draws the winding road through the centers of all squares, in order. */
+  function drawRoad() {
+    const board = $('board');
+    const svg = $('road');
+    if (!svg || !ui.cells.length || board.offsetParent === null) return;
+    const w = board.clientWidth, h = board.clientHeight;
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const pts = ui.cells.map((c) => `${c.offsetLeft + c.offsetWidth / 2},${c.offsetTop + c.offsetHeight / 2}`).join(' ');
+    const cellW = ui.cells[1].offsetWidth;
+    svg.innerHTML =
+      `<polyline points="${pts}" fill="none" stroke="#c8ad7f" stroke-width="${cellW * 0.42}" stroke-linejoin="round" stroke-linecap="round"/>` +
+      `<polyline points="${pts}" fill="none" stroke="#fff7e0" stroke-width="2" stroke-dasharray="6 7" stroke-linejoin="round"/>`;
+  }
+
+  function renderLegend() {
+    const items = [
+      { type: 'question', icon: '?', text: 'Question square: answer to stay' },
+      { type: 'bonus', icon: 'icons/bonus.svg', text: 'Bonus (8, 21): move ahead 3' },
+      { type: 'bridge', icon: 'icons/bridge.svg', text: 'Bridge (24): go straight to 28' },
+      { type: 'shark', icon: 'icons/shark.svg', text: 'Shark (12): move back 3' },
+      { type: 'typhoon', icon: 'icons/typhoon.svg', text: 'Typhoon (26): skip 2 turns' },
+      { type: 'boat', icon: 'icons/boat.svg', text: 'Boat (29): back to square 5' },
+      { type: 'rest', icon: 'icons/rest.svg', text: 'Rest (16, 27): safe, nothing happens' },
+      { type: 'finish', icon: '🏁', text: 'FINISH (33): land exactly to win' }
+    ];
+    const ul = $('legend');
+    ul.textContent = '';
+    for (const it of items) {
+      const sw = el('span', { class: 'swatch', 'aria-hidden': 'true' }, [it.icon.endsWith('.svg') ? el('img', { src: it.icon, alt: '' }) : it.icon]);
+      sw.style.background = it.type === 'finish' ? 'var(--sq-finish)' : `var(--sq-${it.type})`;
+      sw.style.borderColor = `var(--sq-${it.type}-b)`;
+      ul.append(el('li', {}, [sw, el('span', { text: it.text })]));
+    }
+  }
+
+  function renderPawns() {
+    if (!game || !ui.cells.length) return;
+    ui.cells.forEach((cell) => { cell.querySelector('.pawns').textContent = ''; });
+    const names = ui.cells.map(() => []);
+    game.players.forEach((p, i) => {
+      if (seatUser(i).left) return;
+      const pos = ui.displayPos[i] != null ? ui.displayPos[i] : p.pos;
+      let cls = i === game.current && game.phase !== 'over' ? 'pawn--active' : '';
+      if (ui.hop && ui.hop.player === i) cls += ' pawn--' + ui.hop.kind;
+      ui.cells[pos].querySelector('.pawns').append(makePawn(i, cls));
+      names[pos].push(p.name);
+    });
+    ui.cells.forEach((cell, pos) => {
+      const who = names[pos].length ? '. Pawns here: ' + names[pos].join(', ') : '';
+      cell.setAttribute('aria-label', cell.dataset.label + who);
+    });
+  }
+
+  /* =================================================================
+     SIDE PANEL RENDERING
+     ================================================================= */
+  function renderTurn(i = game.current) {
+    const pawn = $('turn-pawn');
+    pawn.textContent = String(i + 1);
+    pawn.style.background = colorOf(i).hex;
+    pawn.style.color = colorOf(i).ink;
+    $('turn-label').textContent = isMe(i) ? 'Your turn' : 'Now playing';
+    $('turn-name').textContent = nameOf(i) + (isMe(i) ? ' (you)' : '');
+  }
+
+  /** `state` lets an animation show updated stats before the turn passes. */
+  function renderPlayers(state = game) {
+    const ul = $('player-list');
+    ul.textContent = '';
+    state.players.forEach((p, i) => {
+      const stats = el('div', { class: 'p-stats' }, [
+        el('span', { text: 'On ' + squareName(p.pos) }),
+        el('span', { text: '✓ ' + p.correct + ' correct' })
+      ]);
+      if (seatUser(i).left) stats.append(el('span', { class: 'badge-left', text: 'left the game' }));
+      else if (p.skip > 0) stats.append(el('span', { class: 'badge-typhoon' }, [
+        el('img', { src: SKIP_ICON, alt: '' }),
+        `skips ${p.skip} turn${p.skip > 1 ? 's' : ''}`
+      ]));
+      const label = p.name + (isMe(i) ? ' (you)' : '') + (seatUser(i).userId === room.hostId ? ' · host' : '');
+      const li = el('li', {}, [makePawn(i, 'pawn--md'), el('span', { class: 'p-name', text: label }), stats]);
+      if (i === state.current && state.phase !== 'over') li.setAttribute('aria-current', 'true');
+      ul.append(li);
+    });
+  }
+
+  function canRoll() {
+    const modalOpen = !$('question-modal').hidden || !$('end-modal').hidden;
+    return !!(room && game && room.status === 'playing' && game.phase === 'roll' && isMe(game.current) &&
+      !net.processing && !net.queue.length && !net.acting && !modalOpen);
+  }
+
+  function updateControls() {
+    $('roll-btn').disabled = !canRoll();
+    $('room-start-btn').disabled = net.acting;
+    $('play-again-btn').disabled = net.acting;
+  }
+
+  function renderAll() {
+    if (!game) return;
+    renderTurn();
+    renderPlayers();
+    renderPawns();
+    updateControls();
+  }
+
+  function setTurnText() {
+    if (!game || game.phase === 'over') return;
+    $('roll-result').textContent = isMe(game.current)
+      ? "It's your turn: roll the die!"
+      : `Waiting for ${nameOf(game.current)} to play…`;
+  }
+
+  /* ---------------- Die ---------------- */
+  const FACES = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+  function setDieFace(n) {
+    const die = $('die');
+    if (!die.children.length) for (let k = 0; k < 9; k++) die.append(el('span', { class: 'pip' }));
+    [...die.children].forEach((pip, k) => pip.classList.toggle('on', FACES[n].includes(k)));
+    die.setAttribute('aria-label', 'Die showing ' + n);
+  }
+  async function animateDie(final, token) {
+    const die = $('die');
+    die.classList.add('rolling');
+    const end = performance.now() + T.roll;
+    try {
+      while (performance.now() < end) {
+        setDieFace(1 + Math.floor(Math.random() * 6));
+        await wait(85, token);
+      }
+    } finally {
+      die.classList.remove('rolling');
+    }
+    setDieFace(final);
+  }
+
+  /* ---------------- Pawn animations ---------------- */
+  async function walkPawn(i, path, token) {
+    for (const pos of path) {
+      ui.displayPos[i] = pos;
+      ui.hop = { player: i, kind: 'hop' };
+      renderPawns();
+      await wait(T.step, token);
+    }
+    ui.hop = null;
+  }
+  async function jumpPawn(i, to, token) {
+    ui.displayPos[i] = to;
+    ui.hop = { player: i, kind: 'jump' };
+    renderPawns();
+    await wait(T.effect, token);
+    ui.hop = null;
+  }
+
+  /* ---------------- History & toasts ---------------- */
+  function log(text, playerIndex) {
+    const li = el('li', { text });
+    if (playerIndex != null) li.style.borderLeftColor = colorOf(playerIndex).hex;
+    const list = $('history');
+    list.prepend(li);
+    while (list.children.length > 40) list.lastChild.remove();
+  }
+  function toast(text, kind = 'info') {
+    const zone = $('toast-zone');
+    const t = el('div', { class: 'toast toast--' + kind, text });
+    zone.append(t);
+    while (zone.children.length > 3) zone.firstChild.remove();
+    setTimeout(() => t.remove(), 3600);
+  }
+  const effectKind = (cell) => ['bonus', 'bridge'].includes(SPECIAL_CELLS[cell].type) ? 'good'
+    : SPECIAL_CELLS[cell].type === 'rest' ? 'info' : 'bad';
+
+  /* =================================================================
+     TURN FLOW (replaying the server's events)
+     ================================================================= */
+  function handleRoll() {
+    if (canRoll()) roomAction('roll');
+  }
+
+  async function playRollEvent(ev, token) {
+    const i = ev.player;
+    const name = nameOf(i);
+    renderTurn(i);
+    await animateDie(ev.roll, token);
+    $('roll-result').textContent = `${isMe(i) ? 'You' : name} rolled a ${ev.roll}.`;
+
+    await walkPawn(i, ev.path, token);
+    log(`${name} rolled ${ev.roll}: ${squareName(ev.start)} → ${squareName(ev.landing)}${ev.bounced ? ' (bounced back from FINISH)' : ''}.`, i);
+    if (ev.bounced) toast(`Too far! ${name} bounces back from FINISH to ${squareName(ev.landing)}.`, 'info');
+
+    // Special squares, possibly chained (21 → 24 → 28)
+    for (const ef of ev.effects) {
+      await wait(T.effect, token);
+      const msg = fill(SPECIAL_CELLS[ef.cell].message, { name, to: ef.to, turns: ef.turns });
+      toast(msg, effectKind(ef.cell));
+      log(msg, i);
+      if (ef.to !== ef.from) await jumpPawn(i, ef.to, token);
+    }
+    if (ev.loopGuard) log('Chain of special squares stopped (loop protection).', i);
+    ui.displayPos[i] = ev.finalPos;
+    renderPlayers(ev.state);
+    renderPawns();
+
+    if (ev.finished) {
+      game = ev.state;
+      log(`🏆 ${name} reached FINISH and wins!`, i);
+      await wait(T.effect, token);
+      showEnd();
+      return;
+    }
+    if (ev.questionId !== null) {
+      game = ev.state;
+      renderAll();
+      openQuestion(ev.questionId);
+      return;
+    }
+    await announceSkips(ev.skipped, ev.state, token);
+    finishTurn(ev.state);
+  }
+
+  /** Announces typhoon skips (and players who left) one by one. */
+  async function announceSkips(skipped, state, token) {
+    for (const s of skipped || []) {
+      const name = state.players[s.player].name;
+      const msg = s.left ? `${name} has left: turn skipped.`
+        : `${name} skips this turn 🌀` + (s.remaining > 0 ? ` (${s.remaining} more to skip)` : '');
+      renderTurn(s.player);
+      $('roll-result').textContent = msg;
+      if (!s.left) toast(msg, 'bad');
+      log(msg, s.player);
+      await wait(s.left ? T.effect : T.skip, token);
+    }
+  }
+
+  function finishTurn(state) {
+    game = state;
+    ui.displayPos = game.players.map((p) => p.pos);
+    setTurnText();
+    renderAll();
+    if (isMe(game.current) && $('question-modal').hidden && $('end-modal').hidden) {
+      $('roll-btn').focus();
+      if (document.hidden) document.title = '🎲 Your turn! — Duck Runner';
+    }
+  }
+
+  /* =================================================================
+     QUESTION MODAL
+     ================================================================= */
+  function openQuestion(id) {
+    const q = QUESTIONS[id];
+    const theme = THEMES[q.t] || { name: q.t, color: '#374151' };
+    const i = game.current;
+    const mine = isMe(i);
+    ui.question = { id, order: L.shuffle([0, 1, 2, 3].slice(0, q.o.length)), mine, sending: false, shown: false };
+
+    $('q-head').style.background = theme.color;
+    $('q-theme').textContent = theme.name;
+    $('q-square').textContent = 'Square ' + (game.pending ? game.pending.landing : game.players[i].pos);
+    $('q-who').textContent = mine ? 'Your question' : `Question for ${nameOf(i)}`;
+    $('q-text').textContent = q.q;
+    $('q-feedback').hidden = true;
+    $('q-continue').hidden = true;
+    $('q-hint').hidden = false;
+    $('q-hint').textContent = mine ? 'Tip: press A, B, C or D to answer.' : `Waiting for ${nameOf(i)} to answer…`;
+
+    const box = $('q-options');
+    box.textContent = '';
+    ui.question.order.forEach((orig, k) => {
+      const btn = el('button', { type: 'button', class: 'opt', 'data-orig': String(orig), disabled: !mine }, [
+        el('span', { class: 'opt-letter', text: LETTERS[k], 'aria-hidden': 'true' }),
+        el('span', { class: 'opt-text', text: q.o[orig] })
+      ]);
+      btn.setAttribute('aria-label', `${LETTERS[k]}: ${q.o[orig]}`);
+      btn.addEventListener('click', () => sendAnswer(orig));
+      box.append(btn);
+    });
+    openModal($('question-modal'), mine ? box.firstChild : null);
+  }
+
+  async function sendAnswer(orig) {
+    const qs = ui.question;
+    if (!qs || !qs.mine || qs.sending || qs.shown) return;
+    qs.sending = true;
+    [...$('q-options').children].forEach((b) => {
+      b.disabled = true;
+      if (Number(b.dataset.orig) === orig) b.classList.add('is-picked');
+    });
+    $('q-hint').textContent = 'Checking your answer…';
+    const ok = await roomAction('answer', { choice: orig });
+    if (!ok && ui.question === qs && !qs.shown) {
+      qs.sending = false;
+      $('q-hint').textContent = 'Tip: press A, B, C or D to answer.';
+      [...$('q-options').children].forEach((b) => { b.disabled = false; b.classList.remove('is-picked'); });
+    }
+  }
+
+  async function playAnswerEvent(ev, token) {
+    const i = ev.player;
+    const name = nameOf(i);
+    const mine = isMe(i);
+    if ($('question-modal').hidden || !ui.question || ui.question.id !== ev.questionId) openQuestion(ev.questionId);
+    const q = QUESTIONS[ev.questionId];
+    ui.question.shown = true;
+
+    // Mark options (with text, not only color)
+    [...$('q-options').children].forEach((btn) => {
+      const o = Number(btn.dataset.orig);
+      btn.disabled = true;
+      btn.classList.remove('is-picked');
+      if (o === q.a) {
+        btn.classList.add('is-correct');
+        btn.append(el('span', { class: 'opt-mark', text: '✓ Right answer' }));
+      } else if (o === ev.choice) {
+        btn.classList.add('is-wrong');
+        btn.append(el('span', { class: 'opt-mark', text: mine ? '✗ Your answer' : `✗ ${name}'s answer` }));
+      } else {
+        btn.classList.add('is-dim');
+      }
+    });
+
+    const who = mine ? 'You' : name;
+    const letter = LETTERS[ui.question.order.indexOf(q.a)];
+    const fb = $('q-feedback');
+    fb.className = 'feedback ' + (ev.correct ? 'ok' : 'ko');
+    fb.textContent = '';
+    fb.append(
+      el('p', { class: 'fb-title', text: ev.correct ? (mine ? '🎉 Correct!' : `🎉 ${name} got it right!`) : (mine ? '❌ Not quite!' : `❌ ${name} got it wrong.`) }),
+      el('p', { text: ev.correct ? `${who} stay${mine ? '' : 's'} on square ${ev.landing}.` : `${who} go${mine ? '' : 'es'} back to ${squareName(ev.start)}.` }),
+      el('p', {}, [el('strong', { text: `Answer: ${letter}. ${q.o[q.a]}` })]),
+      el('p', { text: q.e })
+    );
+    fb.hidden = false;
+    $('q-hint').hidden = true;
+    $('q-continue').hidden = false;
+    $('q-continue').focus();
+    log(ev.correct ? `${name} answered correctly and stays on square ${ev.landing}.` : `${name} answered wrong and goes back to ${squareName(ev.start)}.`, i);
+    renderPlayers(ev.state);
+
+    // Wait for "Continue" (others' answers also close by themselves after a while)
+    await new Promise((resolve) => {
+      ui.continueResolve = resolve;
+      if (!mine) setTimeout(resolve, SPECTATOR_CONTINUE_MS);
+    });
+    ui.continueResolve = null;
+    if (token !== ui.token) throw ABORT;
+    ui.question = null;
+    closeModal($('question-modal'));
+
+    if (!ev.correct) await jumpPawn(i, ev.start, token);
+    await announceSkips(ev.skipped, ev.state, token);
+    finishTurn(ev.state);
+  }
+
+  function continueAfterQuestion() {
+    if (ui.continueResolve) ui.continueResolve();
+  }
+
+  /* =================================================================
+     END SCREEN
+     ================================================================= */
+  function showEnd() {
+    const w = game.winner;
+    $('winner-line').textContent = isMe(w) ? 'You win! 🎉' : `${nameOf(w)} wins!`;
+    $('roll-result').textContent = `${nameOf(w)} reached FINISH.`;
+    const body = $('rank-body');
+    body.textContent = '';
+    L.ranking(game).forEach((p, r) => {
+      body.append(el('tr', {}, [
+        el('td', { class: 'num', text: String(r + 1) }),
+        el('td', {}, [el('span', { class: 'who' }, [makePawn(p.index, 'pawn--md'), p.name + (isMe(p.index) ? ' (you)' : '')])]),
+        el('td', { text: p.pos === FINISH ? 'FINISH' : p.pos === START ? 'LEAVE' : String(p.pos) }),
+        el('td', { class: 'num', text: String(p.correct) })
+      ]));
+    });
+    renderAll();
+    renderEndButtons();
+    openModal($('end-modal'), isHost() ? $('play-again-btn') : $('end-leave-btn'));
+  }
+  function renderEndButtons() {
+    const host = isHost();
+    $('play-again-btn').hidden = !host;
+    $('end-wait').hidden = host;
+  }
+
+  /* =================================================================
+     MODALS: open/close, focus trap, keyboard
+     ================================================================= */
+  function openModal(modal, focusTarget) {
+    if (modal.hidden) ui.lastFocus = document.activeElement;
+    modal.hidden = false;
+    $('main').inert = true;
+    document.querySelector('.app-header').inert = true;
+    updateControls();
+    const target = focusTarget || modal.querySelector('button:not([disabled]):not([hidden])') || modal.querySelector('.modal');
+    if (target) { if (!target.matches('button')) target.tabIndex = -1; target.focus(); }
+  }
+  function closeModal(modal) {
+    if (modal.hidden) return;
+    modal.hidden = true;
+    if ($('question-modal').hidden && $('end-modal').hidden) {
+      $('main').inert = false;
+      document.querySelector('.app-header').inert = false;
+    }
+    updateControls();
+  }
+  function openModalElement() {
+    if (!$('question-modal').hidden) return $('question-modal');
+    if (!$('end-modal').hidden) return $('end-modal');
+    return null;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    const modal = openModalElement();
+    if (!modal) return;
+    // Focus trap (fallback for browsers without `inert`)
+    if (e.key === 'Tab') {
+      const focusables = [...modal.querySelectorAll('button:not([disabled]):not([hidden])')].filter((b) => b.offsetParent !== null);
+      if (!focusables.length) { e.preventDefault(); return; }
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (!modal.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    }
+    // A/B/C/D shortcuts to answer (only for the player who must answer)
+    const qs = ui.question;
+    if (modal.id === 'question-modal' && qs && qs.mine && !qs.sending && !qs.shown && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const k = LETTERS.indexOf(e.key.toUpperCase());
+      if (k >= 0 && k < qs.order.length) { e.preventDefault(); sendAnswer(qs.order[k]); }
+    }
+  });
+
+  /* ---------------- "Leave game" with two-click confirmation ---------------- */
+  function resetLeaveButton() {
+    const btn = $('leave-game-btn');
+    clearTimeout(ui.leaveTimer);
+    btn.textContent = 'Leave game';
+    btn.className = 'btn btn--ghost';
+    btn.dataset.armed = '';
+  }
+  function handleLeaveGame() {
+    const btn = $('leave-game-btn');
+    if (btn.dataset.armed === 'yes') { resetLeaveButton(); leaveRoom(); return; }
+    btn.dataset.armed = 'yes';
+    btn.textContent = 'Click again to leave';
+    btn.className = 'btn btn--danger';
+    ui.leaveTimer = setTimeout(resetLeaveButton, 4000);
+  }
+
+  /* =================================================================
+     WIRING
+     ================================================================= */
+  $('tab-login').addEventListener('click', () => setAuthMode('login'));
+  $('tab-register').addEventListener('click', () => setAuthMode('register'));
+  $('auth-form').addEventListener('submit', submitAuth);
+  $('logout-btn').addEventListener('click', logout);
+  $('create-btn').addEventListener('click', () => enterRoom(() => api('POST', '/api/rooms', {})));
+  $('join-form').addEventListener('submit', submitJoin);
+  $('join-code').addEventListener('input', (e) => {
+    const input = e.target;
+    const caret = input.selectionStart;
+    input.value = input.value.toUpperCase();
+    input.setSelectionRange(caret, caret);
+  });
+  $('copy-code-btn').addEventListener('click', copyCode);
+  $('room-start-btn').addEventListener('click', () => roomAction('start'));
+  $('room-leave-btn').addEventListener('click', leaveRoom);
+  $('roll-btn').addEventListener('click', handleRoll);
+  $('q-continue').addEventListener('click', continueAfterQuestion);
+  $('leave-game-btn').addEventListener('click', handleLeaveGame);
+  $('play-again-btn').addEventListener('click', () => roomAction('start'));
+  $('end-leave-btn').addEventListener('click', leaveRoom);
+  window.addEventListener('load', drawRoad);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawRoad);
+  const baseTitle = document.title;
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) document.title = baseTitle; });
+
+  /* ---------------- Boot ---------------- */
+  (async function boot() {
+    if (location.protocol === 'file:') {
+      $('boot-screen').textContent = 'Online play needs the server: run "npm start" and open http://localhost:3000.';
+      return;
+    }
+    setAuthMode('login');
+    try {
+      const data = await api('GET', '/api/me');
+      if (!data.user) { showScreen('auth-screen'); $('auth-username').focus(); return; }
+      me = data.user;
+      await afterLogin(data.roomCode);
+    } catch (err) {
+      // 404 on /api/me: the page comes from another server (e.g. Live Server), not server.js.
+      $('boot-screen').textContent = err.status === 404
+        ? 'This page is not served by the game server. In the project folder run "npm start", then open http://localhost:3000 (not Live Server).'
+        : err.message + ' Reload the page to try again.';
+    }
+  })();
+})();
+</script>
+</body>
+</html>

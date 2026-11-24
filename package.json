@@ -1,0 +1,20 @@
+{
+  "name": "duck-runner",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Duck Runner — UX & Design Edition, playable online with accounts and room codes.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests.js && node tests-server.js"
+  },
+  "engines": {
+    "node": ">=20.12"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "pg-mem": "^3.0.14"
+  }
+}

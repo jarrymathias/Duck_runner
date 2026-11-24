@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Rest: a sleepy crescent moon with "Zzz" -->
+  <path d="M30 10 A24 24 0 1 0 54 44 A19 19 0 1 1 30 10 Z" fill="#facc15" stroke="#1f2937" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M18 34 q4 3 8 0" fill="none" stroke="#1f2937" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="16" cy="42" r="2.5" fill="#fca5a5"/>
+  <g fill="none" stroke="#7e22ce" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M42 6 h10 l-10 11 h10"/>
+    <path d="M50 22 h7 l-7 8 h7"/>
+    <path d="M44 32 h5 l-5 6 h5"/>
+  </g>
+</svg>

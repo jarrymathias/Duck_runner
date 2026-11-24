@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Shark: a grey shark with sharp teeth jumping out of the waves -->
+  <g stroke="#1f2937" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M26 21 L33 6 L39 22 Z" fill="#64748b"/>
+    <path d="M4 34 C12 20 38 16 52 26 L61 18 L58 32 L61 46 L52 38 C38 48 14 48 4 34 Z" fill="#94a3b8"/>
+    <path d="M7 37 C18 46 38 46 50 38 C36 42 20 42 7 37 Z" fill="#f8fafc" stroke-width="1.5"/>
+    <path d="M27 41 L22 53 L35 43 Z" fill="#64748b"/>
+    <path d="M5 35 L9 39 L11 35 L13 39 L15 35 L17 39 L19 35.5" fill="#ffffff" stroke-width="1.6"/>
+  </g>
+  <circle cx="16" cy="29" r="3" fill="#1f2937"/>
+  <circle cx="17" cy="28" r="1" fill="#ffffff"/>
+  <path d="M24 28 q2 -3 0 -6 M28 28 q2 -3 0 -6" fill="none" stroke="#475569" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M0 56 q8 -6 16 0 t16 0 t16 0 t16 0 V64 H0 Z" fill="#0ea5e9" stroke="#0369a1" stroke-width="2"/>
+</svg>
