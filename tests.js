@@ -48,7 +48,7 @@ function gameAt(pos, nPlayers = 1) {
   return g;
 }
 
-console.log('\nGoose Game — logic tests\n');
+console.log('\nDuck Runner — logic tests\n');
 
 /* ---------- Data ---------- */
 test('50 well-formed questions with valid themes', () => {
@@ -61,40 +61,41 @@ test('50 well-formed questions with valid themes', () => {
   }
 });
 
-/* ---------- Special squares ---------- */
-test('21 → 24 → 28 (bonus then bridge), no question', () => {
+/* ---------- Special squares (board picture: images/board.jpg) ---------- */
+test('8 → 13 (shortcut), no question on 13', () => {
+  const r = L.playRoll(gameAt(5), 3);
+  eq(r.landing, 8);
+  eq(r.effects.map((e) => [e.from, e.to]), [[8, 13]]);
+  eq(r.state.players[0].pos, 13);
+  eq(r.questionId, null);
+  eq(r.state.phase, 'turnEnd');
+});
+
+test('21 → 25 (shortcut), no question on 25', () => {
   const r = L.playRoll(gameAt(18), 3);
-  eq(r.landing, 21);
-  eq(r.effects.map((e) => [e.from, e.to]), [[21, 24], [24, 28]]);
+  eq(r.effects.map((e) => [e.from, e.to]), [[21, 25]]);
+  eq(r.state.players[0].pos, 25);
+  eq(r.questionId, null);
+});
+
+test('24 → 28 (bridge), no question', () => {
+  const r = L.playRoll(gameAt(20), 4);
+  eq(r.landing, 24);
   eq(r.state.players[0].pos, 28);
   eq(r.questionId, null);
   eq(r.state.phase, 'turnEnd');
 });
 
-test('12 → 9 (shark), no question on 9', () => {
-  const r = L.playRoll(gameAt(10), 2);
-  eq(r.state.players[0].pos, 9);
-  eq(r.questionId, null);
-  eq(r.state.pending, null);
-  eq(r.state.phase, 'turnEnd');
-});
-
-test('29 → 5 (boat)', () => {
+test('29 → 5 (boat), then the rest square 5 applies (nothing happens)', () => {
   const r = L.playRoll(gameAt(27), 2);
   eq(r.landing, 29);
+  eq(r.effects.map((e) => [e.kind, e.from, e.to]), [['goto', 29, 5], ['rest', 5, 5]]);
   eq(r.state.players[0].pos, 5);
   eq(r.questionId, null);
 });
 
-test('8 → 11 (bonus), no question on 11', () => {
-  const r = L.playRoll(gameAt(5), 3);
-  eq(r.state.players[0].pos, 11);
-  eq(r.questionId, null);
-  eq(r.state.phase, 'turnEnd');
-});
-
-test('16 and 27 (rest): no question, no move', () => {
-  for (const [from, roll, target] of [[14, 2, 16], [25, 2, 27]]) {
+test('5, 16 and 27 (rest): no question, no move', () => {
+  for (const [from, roll, target] of [[3, 2, 5], [14, 2, 16], [25, 2, 27]]) {
     const r = L.playRoll(gameAt(from), roll);
     eq(r.state.players[0].pos, target);
     eq(r.questionId, null);
@@ -104,7 +105,24 @@ test('16 and 27 (rest): no question, no move', () => {
   }
 });
 
-test('26 (typhoon): the player skips exactly 2 turns (2 players)', () => {
+test('12 (shark): the player skips exactly 1 turn (2 players)', () => {
+  let g = gameAt(10, 2);
+  const r = L.playRoll(g, 2);                // P1 lands on 12
+  eq(r.state.players[0].pos, 12);
+  eq(r.state.players[0].skip, 1);
+  eq(r.questionId, null);
+  g = r.state;
+  const order = [];
+  for (let k = 0; k < 4; k++) {
+    g = L.advanceTurn(g).state;
+    order.push(g.current);
+    g.players[g.current].pos = 14;           // next roll of 2 → 16 (rest)
+    g = L.playRoll(g, 2).state;
+  }
+  eq(order, [1, 1, 0, 1], 'P2, P2 (P1 skips once), then P1 again');
+});
+
+test('26 (whirlpool): the player skips exactly 2 turns (2 players)', () => {
   let g = gameAt(20, 2);
   let r = L.playRoll(g, 6);                  // P1 lands on 26
   eq(r.state.players[0].pos, 26);
@@ -127,7 +145,7 @@ test('26 (typhoon): the player skips exactly 2 turns (2 players)', () => {
   eq(order, [1, 1, 1, 0, 1, 0], 'who played: P2, P2 (P1 skips), P2 (P1 skips), then P1 again');
 });
 
-test('26 (typhoon): solo player skips 2 turns then plays', () => {
+test('26 (whirlpool): solo player skips 2 turns then plays', () => {
   let g = L.playRoll(gameAt(20, 1), 6).state;
   const a = L.advanceTurn(g);
   eq(a.skipped.map((s) => s.remaining), [1, 0]);
@@ -137,24 +155,25 @@ test('26 (typhoon): solo player skips 2 turns then plays', () => {
 });
 
 /* ---------- Finish rules ---------- */
-test('bounce: from 31 with a 5 → 33 then back 3 → 30 (question)', () => {
-  const r = L.playRoll(gameAt(31), 5);
-  eq(r.path, [32, 33, 32, 31, 30]);
+test('bounce: from 31 with a 3 → 32 then back 2 → 30 (question)', () => {
+  const r = L.playRoll(gameAt(31), 3);
+  eq(r.path, [32, 31, 30]);
   eq(r.bounced, true);
   eq(r.state.players[0].pos, 30);
   ok(r.questionId !== null, 'square 30 asks a question');
   eq(r.state.phase, 'question');
 });
 
-test('bounce onto a special square applies it: from 31 with a 6 → 29 → 5', () => {
-  const r = L.playRoll(gameAt(31), 6);
+test('bounce onto a special square applies it: from 31 with a 4 → 29 → 5', () => {
+  const r = L.playRoll(gameAt(31), 4);
+  eq(r.path, [32, 31, 30, 29]);
   eq(r.landing, 29);
   eq(r.state.players[0].pos, 5);
 });
 
-test('exact finish: from 30 with a 3 → 33, game over', () => {
-  const r = L.playRoll(gameAt(30, 2), 3);
-  eq(r.state.players[0].pos, 33);
+test('exact finish: from 30 with a 2 → 32, game over', () => {
+  const r = L.playRoll(gameAt(30, 2), 2);
+  eq(r.state.players[0].pos, 32);
   eq(r.finished, true);
   eq(r.state.phase, 'over');
   eq(r.state.winner, 0);
@@ -163,7 +182,7 @@ test('exact finish: from 30 with a 3 → 33, game over', () => {
 });
 
 test('ranking: position first, then correct answers', () => {
-  const g = gameAt(33, 3);
+  const g = gameAt(32, 3);
   g.players[1].pos = 20; g.players[1].correct = 1;
   g.players[2].pos = 20; g.players[2].correct = 4;
   eq(L.ranking(g).map((p) => p.name), ['P1', 'P3', 'P2']);

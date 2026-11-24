@@ -7,7 +7,7 @@ Each player has their own account and plays from their own device: one player cr
 index.html        page structure, game rules (game-logic script) and UI
 style.css         all the styles (colors, board, modals…)
 icons/            SVG drawings of the special squares
-images/           Duck Runner logo (animated GIF, plus a still one for reduced motion)
+images/           board picture, and the Duck Runner logo (animated GIF, plus a still one for reduced motion)
 server.js         web server + JSON API (accounts, rooms)
 server/           accounts.js (passwords, sessions), rooms.js (codes, room actions, timer, chat),
                   stats.js (adaptive questions, end-of-game report),
@@ -63,14 +63,14 @@ The game works with the keyboard alone: Tab, Enter and Space work everywhere, an
 
 | Square | Effect |
 |---|---|
-| 8, 21 | **Bonus** (star): move ahead 3 squares |
+| 8, 21 | **Shortcut:** 8 jumps to 13, 21 jumps to 25 |
 | 24 | **Bridge:** go straight to 28 |
-| 12 | **Shark:** move back 3 squares |
-| 26 | **Typhoon:** skip the next 2 turns |
+| 12 | **Shark:** skip your next turn |
+| 26 | **Whirlpool:** skip your next 2 turns |
 | 29 | **Boat:** go back to square 5 |
-| 16, 27 | **Rest** (moon): safe square, nothing happens |
+| 5, 16, 27 | **Rest:** safe square, nothing happens |
 
-When a special square moves your pawn, your turn ends without a question. If the pawn lands on another special square, that square's effect applies too: for example 21 → 24 → 28.
+The board goes from START (0) to FINISH (32). When a special square moves your pawn, your turn ends without a question. If the pawn lands on another special square, that square's effect applies too: for example 29 → 5, which is a Rest square.
 
 ## Run the tests
 
@@ -100,9 +100,9 @@ You can add or remove questions. The draw pile adjusts to however many there are
 Special squares are set in `SPECIAL_CELLS`, just below the questions:
 
 ```js
-12: { type:'shark', icon:'icons/shark.svg', name:'Shark', tag:'−3',
-      action:{ kind:'move', by:-3 },
-      message:'A shark! {name} swims back 3 squares to square {to}.' },
+12: { type:'shark', icon:'icons/shark.svg', name:'Shark', tag:'skip 1',
+      action:{ kind:'skip', turns:1 },
+      message:'A shark! {name} hides and will skip the next turn.' },
 ```
 
 - `action.kind` can be:
@@ -110,12 +110,16 @@ Special squares are set in `SPECIAL_CELLS`, just below the questions:
   - `goto` with `to` (a square number);
   - `skip` with `turns`;
   - `rest`.
-- `type` sets the square's color. The colors are the `--sq-*` variables at the top of `style.css`: bonus, bridge, shark, typhoon, boat and rest.
-- `icon` is the path to the square's picture. The drawings are SVG files in `icons/` (`bonus.svg`, `bridge.svg`, `shark.svg`, `typhoon.svg`, `boat.svg`, `rest.svg`). To change one, edit the SVG or replace it with your own picture (SVG, PNG, JPG…) and update the path. Square pictures work best.
+- `type` sets the legend color. The colors are the `--sq-*` variables at the top of `style.css`: bonus, bridge, shark, typhoon, boat and rest.
+- `icon` is the picture shown in the legend. The drawings are SVG files in `icons/`.
 - `message` can use `{name}`, `{to}` and `{turns}`.
 - Chains of special squares are protected against infinite loops: a square can't trigger twice in the same chain, and a chain has at most `MAX_CHAIN` effects.
 
-If you change which squares are special, also update the legend in `renderLegend()` and the "How to play" text in `index.html` (it appears on the account, lobby and waiting-room screens).
+The legend under the board is built from `SPECIAL_CELLS`, so it always matches. If you change which squares are special, also update the "How to play" text in `index.html` (it appears on the account, lobby and waiting-room screens), and make sure the board picture shows the same thing.
+
+## Change the board picture
+
+The board is the picture `images/board.jpg` (1400 × 1400 pixels). Pawns are drawn on invisible spots, one per square, placed with `BOARD_SPOTS` in `index.html`: `BOARD_SPOTS[n]` is the center of square `n`, as a percentage of the picture's width and height (`[x, y]`). If you use a new picture, keep it square and update these positions. If the number of squares changes, also change `FINISH` in the game-logic script.
 
 ## Code layout
 
@@ -126,4 +130,4 @@ The styles are in `style.css`. `index.html` contains two scripts:
 
 On the server, `server/rooms.js` holds every room action as a pure function, which makes them easy to test. `server/db.js` runs each action inside a transaction that locks the room's row, so when two players click at the same time, the server handles one click and then the other. Rooms that nobody has touched for 7 days are deleted.
 
-The board has 4 lanes of 8 squares joined by single turn squares, like a snake. This layout puts square 24 right above square 28, so the bridge crosses the gap between them.
+The board is a picture (`images/board.jpg`) with the pawns drawn on top of it; see "Change the board picture" above.

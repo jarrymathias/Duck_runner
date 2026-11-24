@@ -115,14 +115,14 @@ const throwsStatus = (fn, status) => assert.throws(fn, (e) => e.status === statu
   await test('special squares pass the turn without a question', () => {
     let r = rooms.startGame(rooms.joinRoom(rooms.createRoom('K7P2XM', alice), bob), alice);
     r.game.players[0].pos = 5;
-    r = rooms.roll(r, alice, 3); // 8 = bonus → 11
-    assert.strictEqual(r.game.players[0].pos, 11);
+    r = rooms.roll(r, alice, 3); // 8 = shortcut → 13
+    assert.strictEqual(r.game.players[0].pos, 13);
     assert.strictEqual(r.game.current, 1);
   });
   await test('reaching FINISH ends the game; the host can restart', () => {
     let r = rooms.startGame(rooms.joinRoom(rooms.createRoom('K7P2XM', alice), bob), alice);
     r.game.players[0].pos = 30;
-    r = rooms.roll(r, alice, 3);
+    r = rooms.roll(r, alice, 2); // 30 + 2 = FINISH (32)
     assert.strictEqual(r.status, 'over');
     assert.strictEqual(r.game.winner, 0);
     r = rooms.startGame(r, alice);
