@@ -77,14 +77,27 @@ function sessionCookie(req, token, maxAgeSeconds) {
 }
 
 /* ---------------- Brute-force protection on login/register ---------------- */
-const attempts = new Map(); // ip -> { count, reset }
-function rateLimit(req, limit = 20, windowMs = 10 * 60 * 1000) {
-  const ip = req.socket.remoteAddress || '?';
+// On Render (or with TRUST_PROXY=1) every request comes through a proxy, so the
+// player's address is in X-Forwarded-For rather than on the socket.
+const BEHIND_PROXY = !!(process.env.RENDER || process.env.TRUST_PROXY);
+function clientIp(req) {
+  const fwd = BEHIND_PROXY && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return fwd || req.socket.remoteAddress || '?';
+}
+
+const attempts = new Map(); // key -> { count, reset }
+function hit(key, limit, windowMs) {
   const now = Date.now();
-  let a = attempts.get(ip);
-  if (!a || a.reset < now) { a = { count: 0, reset: now + windowMs }; attempts.set(ip, a); }
+  let a = attempts.get(key);
+  if (!a || a.reset < now) { a = { count: 0, reset: now + windowMs }; attempts.set(key, a); }
   if (++a.count > limit) throw new HttpError(429, 'Too many attempts. Try again in a few minutes.');
   if (attempts.size > 10000) for (const [k, v] of attempts) if (v.reset < now) attempts.delete(k);
+}
+/** Per address, and per account name (X-Forwarded-For can be forged, a name can't be dodged). */
+function rateLimit(req, username) {
+  const win = 10 * 60 * 1000;
+  hit('ip:' + clientIp(req), 30, win);
+  if (typeof username === 'string') hit('user:' + username.toLowerCase(), 15, win);
 }
 
 /* ---------------- Room polling shortcut ----------------
@@ -137,8 +150,8 @@ async function act(res, code, user, since, change) {
 
 const routes = [
   ['POST', /^\/api\/register$/, async (req, res) => {
-    rateLimit(req);
     const { username, password } = await readJson(req);
+    rateLimit(req);
     const problem = accounts.checkCredentials(username, password);
     if (problem) throw new HttpError(400, problem);
     const user = await db.createUser(username, await accounts.hashPassword(password));
@@ -147,8 +160,8 @@ const routes = [
   }],
 
   ['POST', /^\/api\/login$/, async (req, res) => {
-    rateLimit(req);
     const { username, password } = await readJson(req);
+    rateLimit(req, username);
     const user = typeof username === 'string' && typeof password === 'string' ? await db.findUserByName(username) : null;
     if (!user || !(await accounts.verifyPassword(password, user.password_hash))) {
       throw new HttpError(401, 'Wrong username or password.');
@@ -160,6 +173,12 @@ const routes = [
     const token = cookies(req)[COOKIE];
     if (token) await db.deleteSession(accounts.hashToken(token));
     send(res, 200, { ok: true }, { 'Set-Cookie': sessionCookie(req, '', 0) });
+  }],
+
+  // Render's health check: answers only when the database answers too.
+  ['GET', /^\/api\/health$/, async (req, res) => {
+    await db.ping();
+    send(res, 200, { ok: true });
   }],
 
   ['GET', /^\/api\/me$/, async (req, res) => {

@@ -205,6 +205,9 @@ const throwsStatus = (fn, status) => assert.throws(fn, (e) => e.status === statu
     await test('static files are served, secrets are not', async () => {
       assert.strictEqual((await A('GET', '/')).status, 200);
       assert.strictEqual((await A('GET', '/style.css')).status, 200);
+      const health = await A('GET', '/api/health');
+      assert.strictEqual(health.status, 200);
+      assert.strictEqual(health.body.ok, true);
       assert.strictEqual((await A('GET', '/icons/shark.svg')).status, 200);
       const logo = await fetch(base + '/images/duck-runner.gif');
       assert.strictEqual(logo.status, 200);

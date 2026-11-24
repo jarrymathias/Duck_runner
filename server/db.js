@@ -26,6 +26,7 @@ function connect(options = {}) {
 }
 
 const query = (text, params) => pool.query(text, params);
+const ping = () => query('SELECT 1');
 
 async function migrate() {
   await query(`
@@ -140,7 +141,7 @@ async function cleanup() {
 }
 
 module.exports = {
-  connect, migrate, cleanup,
+  connect, migrate, cleanup, ping,
   createUser, findUserByName, createSession, userForSession, deleteSession,
   insertRoom, getRoom, currentRoomCode, updateRoom
 };

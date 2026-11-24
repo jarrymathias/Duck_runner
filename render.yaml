@@ -1,0 +1,16 @@
+# Render Blueprint: Dashboard → New → Blueprint → pick this repository.
+services:
+  - type: web
+    name: duck-runner
+    runtime: node
+    plan: free
+    region: frankfurt          # close to the Neon database (eu-west-2, London)
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL      # Neon connection string, typed in the dashboard (never in Git)
+        sync: false

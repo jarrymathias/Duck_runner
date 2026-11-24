@@ -26,6 +26,17 @@ You need Node.js 20.12 or newer and a PostgreSQL database (the project uses Neon
 
 Opening `index.html` directly by double-clicking no longer works: the game needs the server.
 
+## Put it online (Render)
+
+`render.yaml` describes the service, so Render sets it up for you:
+
+1. On https://render.com, sign in with GitHub.
+2. **New → Blueprint**, pick this repository, then **Apply**.
+3. When Render asks for `DATABASE_URL`, paste the Neon connection string (the same one as in `.env`).
+4. Wait for the deploy to finish, then open the `https://duck-runner-xxxx.onrender.com` address Render gives you.
+
+Every push to `main` deploys again. On the free plan the server sleeps after 15 minutes without visitors: the first visit after that takes about a minute to load.
+
 ## Play
 
 1. **Create an account** (username and password) or log in. Passwords are stored hashed (scrypt), and sessions last 30 days.
