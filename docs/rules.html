@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Duck Runner — Board game rules</title>
+<!-- Source of docs/duck-runner-rules.pdf (printed with headless Chrome, A4). -->
+<style>
+  @page { size: A4; margin: 14mm 15mm 14mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: #1f2937;
+    font: 10pt/1.36 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  h1, h2, h3 { font-family: "Trebuchet MS", "Segoe UI", sans-serif; line-height: 1.2; margin: 0; }
+  h2 {
+    font-size: 13.5pt; color: #0f766e; margin: 3.5mm 0 1.5mm;
+    padding-bottom: 1mm; border-bottom: 2px solid #d9cfbb;
+    break-after: avoid;
+  }
+  p { margin: 0 0 2mm; }
+  ul, ol { margin: 0 0 2mm; padding-left: 6mm; }
+  li { margin-bottom: 1mm; }
+  strong { color: #111827; }
+
+  .head { display: flex; align-items: center; gap: 6mm; margin-bottom: 3mm; }
+  .head img { height: 24mm; }
+  .head h1 { font-size: 22pt; color: #92400e; }
+  .head .sub { font-size: 11pt; color: #4b5563; margin-top: 1mm; }
+  .tagline { font-size: 10.5pt; color: #4b5563; margin-top: 2mm; }
+
+  .two { display: grid; grid-template-columns: 1fr 66mm; gap: 6mm; align-items: start; }
+  .board { width: 66mm; border-radius: 3mm; border: 1px solid #d9cfbb; display: block; }
+  .caption { font-size: 8.5pt; color: #4b5563; text-align: center; margin-top: 1mm; }
+
+  table { width: 100%; border-collapse: collapse; margin: 1mm 0 2mm; break-inside: avoid; }
+  th, td { border-bottom: 1px solid #e5dccb; padding: 1.2mm 2mm; text-align: left; vertical-align: middle; }
+  th { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .04em; color: #4b5563; background: #faf7ee; }
+  td.sq { white-space: nowrap; font-weight: 700; width: 24mm; }
+  td.ic { width: 11mm; }
+  td.ic img { width: 7mm; height: 7mm; display: block; }
+
+  .box {
+    border: 2px solid #0f766e; background: #f0fdfa; border-radius: 3mm;
+    padding: 2mm 4mm; margin: 1.5mm 0 2mm; break-inside: avoid;
+  }
+  .box.warn { border-color: #b45309; background: #fffbeb; }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+  .ex { color: #4b5563; font-size: 9.5pt; }
+  .page-break { break-before: page; }
+  .foot { margin-top: 5mm; font-size: 8.5pt; color: #6b7280; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <img src="../images/duck-runner-still.gif" alt="Duck Runner">
+  <div>
+    <h1>Duck Runner</h1>
+    <div class="sub">UX &amp; Design Edition — board game rules</div>
+    <div class="tagline">A race across the water, where every question square tests what you know about wireframes, UX principles, user research and methodologies.</div>
+  </div>
+</div>
+
+<div class="two">
+  <div>
+    <h2>Contents</h2>
+    <ul>
+      <li><strong>1 board</strong>, from START to FINISH (square 32)</li>
+      <li><strong>1 six-sided die</strong></li>
+      <li><strong>1 to 6 pawns</strong>, one color per player</li>
+      <li><strong>50 question cards</strong>: the question and 4 answers (A, B, C, D) on the front; the right answer and a short explanation on the back</li>
+      <li><strong>Star tokens</strong> to count correct answers (or a pencil and paper)</li>
+      <li><strong>Skip tokens</strong> for the turns a player must skip</li>
+      <li><strong>A 30-second sand timer</strong> (optional)</li>
+    </ul>
+
+    <h2>Goal</h2>
+    <p>Be the first player to land <strong>exactly</strong> on <strong>FINISH</strong> (square 32).</p>
+
+    <h2>Setup</h2>
+    <ol>
+      <li>Shuffle the question cards and place them face down: this is the <strong>draw pile</strong>.</li>
+      <li>Every player puts their pawn on <strong>START</strong>.</li>
+      <li>Everyone rolls the die. The highest roll starts, then play goes clockwise.</li>
+    </ol>
+  </div>
+  <div>
+    <img class="board" src="../images/board.jpg" alt="The Duck Runner board">
+    <div class="caption">The board: START at the top right, FINISH (32) in the middle.</div>
+  </div>
+</div>
+
+<h2>On your turn</h2>
+<p>Roll the die and move your pawn forward that many squares. What happens next depends on the square you land on.</p>
+
+<h2>Question squares</h2>
+<p>Every square with no text on it is a question square.</p>
+<ol>
+  <li>The player on your left draws the top card and reads you the question and the 4 answers, without looking at the back.</li>
+  <li>If you play with the sand timer, they turn it over: you have <strong>30 seconds</strong> to answer.</li>
+  <li>They turn the card over and read the right answer and the explanation out loud.</li>
+</ol>
+<div class="box">
+  <p><strong>Right answer:</strong> you stay on your square and take <strong>1 star token</strong>.</p>
+  <p><strong>Wrong answer, or the timer ran out:</strong> you <strong>move back 1 square</strong>. The square you move back to <strong>does not</strong> apply its effect. <span class="ex">Example: you land on 9 and answer wrong, so you move back to 8, but you do not take the shortcut to 13.</span></p>
+</div>
+<p>Either way, the card then goes face up on the <strong>discard pile</strong>.</p>
+<div class="box warn">
+  <p><strong>When the draw pile is empty</strong>, take all the cards from the discard pile, shuffle them and make a new draw pile. Keep doing this for the whole game, so the questions come back only after every card has been played.</p>
+</div>
+
+<h2>Special squares</h2>
+<p>A special square applies right away, and there is <strong>no question</strong>. Your turn ends there.</p>
+<table>
+  <thead><tr><th></th><th>Square</th><th>What it says</th><th>What happens</th></tr></thead>
+  <tbody>
+    <tr><td class="ic"><img src="../icons/bonus.svg" alt=""></td><td class="sq">8</td><td>Go to case 13</td><td>Jump ahead to square 13.</td></tr>
+    <tr><td class="ic"><img src="../icons/shark.svg" alt=""></td><td class="sq">12</td><td>Skip 1 turn</td><td>Take 1 skip token: you miss your next turn.</td></tr>
+    <tr><td class="ic"><img src="../icons/bonus.svg" alt=""></td><td class="sq">21</td><td>Go to case 25</td><td>Jump ahead to square 25.</td></tr>
+    <tr><td class="ic"><img src="../icons/bridge.svg" alt=""></td><td class="sq">24</td><td>Cross the bridge</td><td>Cross the bridge to square 28.</td></tr>
+    <tr><td class="ic"><img src="../icons/typhoon.svg" alt=""></td><td class="sq">26</td><td>Skip 2 turns</td><td>Take 2 skip tokens: you miss your next 2 turns.</td></tr>
+    <tr><td class="ic"><img src="../icons/boat.svg" alt=""></td><td class="sq">29</td><td>Go to case 5</td><td>The boat takes you back to square 5.</td></tr>
+    <tr><td class="ic"><img src="../icons/rest.svg" alt=""></td><td class="sq">5, 16, 27</td><td>Rest</td><td>A safe square: nothing happens.</td></tr>
+  </tbody>
+</table>
+<ul>
+  <li><strong>Chains:</strong> if a special square sends you to another special square, that one applies too. <span class="ex">Example: 29 sends you to 5, which is a Rest square, so nothing more happens.</span></li>
+  <li><strong>Skip tokens:</strong> when your turn comes and you have skip tokens, give one back instead of playing.</li>
+</ul>
+
+<h2>Reaching FINISH</h2>
+<ul>
+  <li>You must land <strong>exactly</strong> on square 32.</li>
+  <li>If your roll is too high, move up to FINISH, then <strong>bounce back</strong> by the extra squares. The square you stop on applies as usual.
+    <div class="ex">From 31 with a 3: 32, 31, 30. You stop on 30, a question square.</div>
+    <div class="ex">From 31 with a 4: 32, 31, 30, 29. You stop on 29, and the boat takes you back to 5.</div>
+  </li>
+</ul>
+
+<h2>End of the game</h2>
+<ul>
+  <li>The first player on FINISH <strong>wins</strong>.</li>
+  <li>To rank the others, the pawn furthest along comes first. If two pawns are on the same square, the player with more star tokens comes first.</li>
+</ul>
+
+<h2>Variants</h2>
+<ul>
+  <li><strong>Relaxed:</strong> play without the sand timer, for beginners or younger players.</li>
+  <li><strong>Review:</strong> each time you answer wrong, write the card's question on a sheet of paper. At the end, find those cards and read their answers and explanations again.</li>
+</ul>
+
+<h2>Quick summary</h2>
+<table>
+  <tbody>
+    <tr><td class="sq">Question</td><td>Right: stay and take a star. Wrong or too slow: move back 1 square (no effect).</td></tr>
+    <tr><td class="sq">Special</td><td>Its effect applies at once, no question, and the turn ends.</td></tr>
+    <tr><td class="sq">Empty pile</td><td>Shuffle the discard pile into a new draw pile.</td></tr>
+    <tr><td class="sq">FINISH</td><td>Land exactly on 32; extra steps bounce you back.</td></tr>
+  </tbody>
+</table>
+
+<div class="foot">Duck Runner — UX &amp; Design Edition. Also playable online, with accounts and game codes.</div>
+</body>
+</html>

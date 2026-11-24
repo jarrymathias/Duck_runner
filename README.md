@@ -12,6 +12,7 @@ server.js         web server + JSON API (accounts, rooms)
 server/           accounts.js (passwords, sessions), rooms.js (codes, room actions, timer, chat),
                   stats.js (adaptive questions, end-of-game report),
                   db.js (PostgreSQL), logic.js (loads the rules from index.html)
+docs/             rules of the board game version: rules.html and the printable duck-runner-rules.pdf
 tests.js          game rule tests
 tests-server.js   account, room and API tests (in-memory database)
 .env              database settings: secret, never commit or share it
