@@ -325,6 +325,11 @@ const throwsStatus = (fn, status) => assert.throws(fn, (e) => e.status === statu
       assert.strictEqual(health.status, 200);
       assert.strictEqual(health.body.ok, true);
       assert.strictEqual((await A('GET', '/icons/shark.svg')).status, 200);
+      const ans = await A('GET', '/answers');
+      assert.strictEqual(ans.status, 200);
+      assert.match(ans.headers.get('content-type'), /text\/html/);
+      assert.strictEqual((ans.raw.match(/class="card answer-card"/g) || []).length, L.QUESTIONS.length);
+      assert.match(ans.raw, /Sketching 8 ideas in 8 minutes/);
       const logo = await fetch(base + '/images/duck-runner.gif');
       assert.strictEqual(logo.status, 200);
       assert.strictEqual(logo.headers.get('content-type'), 'image/gif');

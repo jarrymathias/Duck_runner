@@ -21,6 +21,7 @@ const accounts = require('./server/accounts');
 const rooms = require('./server/rooms');
 const stats = require('./server/stats');
 const L = require('./server/logic');
+const answers = require('./server/answers');
 
 const COOKIE = 'goose_sid';
 const MAX_BODY = 10 * 1024;
@@ -314,6 +315,11 @@ async function handle(req, res) {
       if (status === 500) console.error('[api]', req.method, url.pathname, err);
       return send(res, status, { error: status === 500 ? 'Server error, please retry.' : err.message });
     }
+  }
+
+  if ((req.method === 'GET' || req.method === 'HEAD') && /^\/answers(\.html)?$/.test(url.pathname)) {
+    res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-cache' });
+    return res.end(req.method === 'HEAD' ? undefined : answers.render());
   }
 
   const file = req.method === 'GET' || req.method === 'HEAD' ? staticPath(url.pathname) : null;
