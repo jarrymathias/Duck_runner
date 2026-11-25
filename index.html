@@ -75,6 +75,7 @@
   <!-- ===================== ACCOUNT SCREEN ===================== -->
   <section id="auth-screen" hidden aria-labelledby="auth-title">
     <div class="setup-layout">
+      <button type="button" class="btn btn--small btn--ghost home-back" data-home>← Home</button>
       <form id="auth-form" class="card" novalidate>
         <h2 id="auth-title">Log in</h2>
         <div class="tabs" role="group" aria-label="Account">
@@ -94,31 +95,13 @@
         <p class="form-error" id="auth-error" role="alert" hidden></p>
         <button type="submit" class="btn btn--big" id="auth-submit">Log in</button>
       </form>
-      <section class="card rules" aria-labelledby="rules-title-1">
-        <h2 id="rules-title-1">How to play</h2>
-        <ul>
-          <li>Players take turns in order. Roll the die and move your pawn forward.</li>
-          <li>On a <strong>question square</strong>, answer the multiple-choice question within <strong>30 seconds</strong>.
-            <strong>Right:</strong> stay there. <strong>Wrong or too slow:</strong> move back one square (its special effect does not apply).
-            You get more questions on the themes you find hard.</li>
-          <li class="rule-special"><img class="rule-icon" src="icons/bonus.svg" alt=""> <span><strong>Shortcut</strong> (8 → 13, 21 → 25): jump ahead.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/bridge.svg" alt=""> <span><strong>Bridge</strong> (24): cross straight to square 28.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/shark.svg" alt=""> <span><strong>Shark</strong> (12): skip your next turn.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/typhoon.svg" alt=""> <span><strong>Whirlpool</strong> (26): skip your next 2 turns.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/boat.svg" alt=""> <span><strong>Boat</strong> (29): sail back to square 5.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/rest.svg" alt=""> <span><strong>Rest</strong> (5, 16, 27): a safe square, nothing happens.</span></li>
-          <li>After a special square your turn ends, with no question. If it sends you to another special square, that one applies too.</li>
-          <li>You must land <strong>exactly</strong> on FINISH (square 32). If your roll is too high, you bounce back by the extra squares.</li>
-          <li>The first player to reach FINISH wins!</li>
-        </ul>
-        <a class="answers-link" href="/answers">📖 Revise all the questions and answers →</a>
-      </section>
     </div>
   </section>
 
   <!-- ===================== LOBBY SCREEN ===================== -->
   <section id="lobby-screen" hidden aria-labelledby="lobby-title">
     <div class="setup-layout">
+      <button type="button" class="btn btn--small btn--ghost home-back" data-home>← Home</button>
       <div class="card lobby-card">
         <h2 id="lobby-title">Play with friends</h2>
         <p>Create a game and share its code, or type the code a friend gave you. Each player plays from their own device, with their own account.</p>
@@ -139,25 +122,6 @@
         </div>
         <p class="form-error" id="lobby-error" role="alert" hidden></p>
       </div>
-      <section class="card rules" aria-labelledby="rules-title-2">
-        <h2 id="rules-title-2">How to play</h2>
-        <ul>
-          <li>Players take turns in order. Roll the die and move your pawn forward.</li>
-          <li>On a <strong>question square</strong>, answer the multiple-choice question within <strong>30 seconds</strong>.
-            <strong>Right:</strong> stay there. <strong>Wrong or too slow:</strong> move back one square (its special effect does not apply).
-            You get more questions on the themes you find hard.</li>
-          <li class="rule-special"><img class="rule-icon" src="icons/bonus.svg" alt=""> <span><strong>Shortcut</strong> (8 → 13, 21 → 25): jump ahead.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/bridge.svg" alt=""> <span><strong>Bridge</strong> (24): cross straight to square 28.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/shark.svg" alt=""> <span><strong>Shark</strong> (12): skip your next turn.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/typhoon.svg" alt=""> <span><strong>Whirlpool</strong> (26): skip your next 2 turns.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/boat.svg" alt=""> <span><strong>Boat</strong> (29): sail back to square 5.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/rest.svg" alt=""> <span><strong>Rest</strong> (5, 16, 27): a safe square, nothing happens.</span></li>
-          <li>After a special square your turn ends, with no question. If it sends you to another special square, that one applies too.</li>
-          <li>You must land <strong>exactly</strong> on FINISH (square 32). If your roll is too high, you bounce back by the extra squares.</li>
-          <li>The first player to reach FINISH wins!</li>
-        </ul>
-        <a class="answers-link" href="/answers">📖 Revise all the questions and answers →</a>
-      </section>
     </div>
   </section>
 
@@ -180,24 +144,6 @@
         </div>
       </div>
       <div id="room-chat-slot"></div>
-      <section class="card rules" aria-labelledby="rules-title-3">
-        <h2 id="rules-title-3">How to play</h2>
-        <ul>
-          <li>Players take turns in order. Roll the die and move your pawn forward.</li>
-          <li>On a <strong>question square</strong>, answer the multiple-choice question within <strong>30 seconds</strong>.
-            <strong>Right:</strong> stay there. <strong>Wrong or too slow:</strong> move back one square (its special effect does not apply).
-            You get more questions on the themes you find hard.</li>
-          <li class="rule-special"><img class="rule-icon" src="icons/bonus.svg" alt=""> <span><strong>Shortcut</strong> (8 → 13, 21 → 25): jump ahead.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/bridge.svg" alt=""> <span><strong>Bridge</strong> (24): cross straight to square 28.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/shark.svg" alt=""> <span><strong>Shark</strong> (12): skip your next turn.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/typhoon.svg" alt=""> <span><strong>Whirlpool</strong> (26): skip your next 2 turns.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/boat.svg" alt=""> <span><strong>Boat</strong> (29): sail back to square 5.</span></li>
-          <li class="rule-special"><img class="rule-icon" src="icons/rest.svg" alt=""> <span><strong>Rest</strong> (5, 16, 27): a safe square, nothing happens.</span></li>
-          <li>After a special square your turn ends, with no question. If it sends you to another special square, that one applies too.</li>
-          <li>You must land <strong>exactly</strong> on FINISH (square 32). If your roll is too high, you bounce back by the extra squares.</li>
-          <li>The first player to reach FINISH wins!</li>
-        </ul>
-      </section>
     </div>
   </section>
 
@@ -1899,19 +1845,20 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) document.title = baseTitle; });
 
   /* ---------------- Home: rules, or connect and play ---------------- */
-  let booted = false;
+  let booting = false;
   function showHome(focus) { showScreen('home-screen'); if (focus) $('home-play-btn').focus(); }
   function showRules() { showScreen('rules-screen'); $('rules-title-0').scrollIntoView({ block: 'start' }); $('rules-play-btn').focus(); }
-  function play() {
-    if (booted) return;
-    booted = true;
+  async function play() {
+    if (booting) return;
+    booting = true;
     showScreen('boot-screen');
-    boot();
+    try { await boot(); } finally { booting = false; }
   }
   $('home-play-btn').addEventListener('click', play);
   $('rules-play-btn').addEventListener('click', play);
   $('home-rules-btn').addEventListener('click', showRules);
   $('rules-back-btn').addEventListener('click', () => showHome(true));
+  document.querySelectorAll('[data-home]').forEach((b) => b.addEventListener('click', () => showHome(true)));
   showHome();
 
   /* ---------------- Boot ---------------- */

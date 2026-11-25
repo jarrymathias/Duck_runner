@@ -139,8 +139,9 @@ main { max-width: 1280px; margin: 0 auto; padding: 1.5rem 1rem 2.5rem; }
 /* ==========================================================================
    4. Account, lobby & waiting room screens
    ========================================================================== */
-.setup-layout { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
-@media (min-width: 860px) { .setup-layout { grid-template-columns: 1.1fr 1fr; align-items: start; } }
+/* One centered column: the form or lobby card (and the chat in the waiting room) */
+.setup-layout { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); width: min(100%, 620px); margin: 2rem auto 0; }
+.home-back { justify-self: start; }
 
 .boot-msg { max-width: 520px; margin: 3rem auto; text-align: center; font-weight: 600; }
 .boot-msg::before {
