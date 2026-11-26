@@ -47,7 +47,7 @@ function render() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Answers — Duck Runner</title>
-<link rel="icon" href="images/duck-runner-still.gif">
+<link rel="icon" href="images/duck-runner.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -56,7 +56,7 @@ function render() {
 <body class="answers-page">
 <header class="app-header">
   <a class="brand" href="/" aria-label="Duck Runner: back to the game">
-    <img class="logo" src="images/duck-runner-still.gif" width="640" height="360" alt="">
+    <img class="logo" src="images/duck-runner.png" width="800" height="695" alt="">
   </a>
   <a class="btn btn--small btn--ghost" href="/">← Back to the game</a>
 </header>

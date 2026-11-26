@@ -7,7 +7,7 @@ Each player has their own account and plays from their own device: one player cr
 index.html        page structure, game rules (game-logic script) and UI
 style.css         all the styles (colors, board, modals…)
 icons/            SVG drawings of the special squares
-images/           board picture, and the Duck Runner logo (animated GIF, plus a still one for reduced motion)
+images/           board picture, and the Duck Runner logo (transparent PNG)
 server.js         web server + JSON API (accounts, rooms)
 server/           accounts.js (passwords, sessions), rooms.js (codes, room actions, timer, chat),
                   stats.js (adaptive questions, end-of-game report),

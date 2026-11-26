@@ -330,9 +330,9 @@ const throwsStatus = (fn, status) => assert.throws(fn, (e) => e.status === statu
       assert.match(ans.headers.get('content-type'), /text\/html/);
       assert.strictEqual((ans.raw.match(/class="card answer-card"/g) || []).length, L.QUESTIONS.length);
       assert.match(ans.raw, /Sketching 8 ideas in 8 minutes/);
-      const logo = await fetch(base + '/images/duck-runner.gif');
+      const logo = await fetch(base + '/images/duck-runner.png');
       assert.strictEqual(logo.status, 200);
-      assert.strictEqual(logo.headers.get('content-type'), 'image/gif');
+      assert.strictEqual(logo.headers.get('content-type'), 'image/png');
       for (const p of ['/.env', '/server.js', '/package.json', '/server/db.js', '/icons/../.env', '/%2e%2e/.env']) {
         const r = await fetch(base + p);
         assert.strictEqual(r.status, 404, p);
